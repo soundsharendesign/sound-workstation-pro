@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- 安全：内容安全策略。本页是单文件 HTML，内联 style / script 无法避免，故保留 'unsafe-inline'；
+     CSP 在此的作用是：禁用 object / base 一类标签、禁止明文 http 外传、限定外部脚本只能来自指定 CDN。
+     更彻底的做法：把 CSS/JS 拆成独立文件后改用 nonce，即可去掉 'unsafe-inline'。
+     白名单里的 unpkg.com 是 tesseract.js 默认的 worker/core 来源，删掉会导致读谱功能失效。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com; connect-src 'self' blob: data: https:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <title>SOUNDWORKSTATION · 多音轨音色设计工作站 FIXED</title>
 <style>
 /* ============================================================
@@ -282,6 +287,17 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 }
 .step-sel option{background:#131924;color:#eef2f7}
 .step-help,.small-note{font-size:10px;color:var(--text-muted);margin-top:10px;line-height:1.7}
+/* ---------- Step 分页导航（长度扩展后界面尺寸保持不变） ---------- */
+.step-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:8px 10px;
+ background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:10px}
+.step-nav .nav-label{font-size:11px;color:var(--text-muted)}
+.step-page-strip{display:flex;gap:4px;flex-wrap:wrap}
+.step-page-chip{min-width:26px;height:22px;padding:0 4px;border-radius:6px;cursor:pointer;
+ border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--text-muted);
+ font-size:10px;font-weight:700;line-height:1}
+.step-page-chip:hover{border-color:var(--accent);color:var(--accent)}
+.step-page-chip.active{background:var(--accent);color:#04150b;border-color:var(--accent)}
+.step-head.is-other-bar{opacity:.45}
 .step-subhead{font-size:7.5px;color:var(--text-dim);text-align:center;margin:1px 0;letter-spacing:.3px}
 .step-cell{
  min-height:62px;border-radius:8px;border:1px solid rgba(255,255,255,.06);
@@ -633,8 +649,23 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
       <div class="toolbar"><button id="btnUseStep" class="btn mode-btn">使用 Step Sequencer</button><button id="btnStepPlay" class="btn primary">▶ Step 播放</button><button id="btnStepClear" class="btn">清空</button><span style="font-size:11px;color:var(--text-muted)">BPM</span><input type="range" id="stepBpmSlider" min="60" max="240" step="1" value="120" style="width:90px"><span id="stepBpmVal" class="val-box">120</span><span style="font-size:11px;color:var(--text-muted)">起音网格</span><select id="stepResolution" class="styled-sel"><option value="1">♩ 四分</option><option value="0.5">♪ 八分</option><option value="0.25" selected>♬ 十六分</option><option value="0.3333333333">♪³ 八分三连</option></select></div>
     </div>
     <div class="status-pill" style="margin:8px 0 10px">每格 = 一个起音位置；每格可独立选择音高和时值。四条轨道可以同时发声。</div>
+    <div class="step-nav">
+      <span class="nav-label">总长度</span>
+      <select id="stepLength" class="styled-sel" title="Pattern 总长度。1 小节 = 16 个十六分音符；网格一次只显示 1 小节，用下方小节号翻页">
+        <option value="16" selected>1 小节 · 16 步</option>
+        <option value="32">2 小节 · 32 步</option>
+        <option value="64">4 小节 · 64 步</option>
+        <option value="128">8 小节 · 128 步</option>
+      </select>
+      <button id="stepPrevBar" class="btn small" title="上一小节">◀</button>
+      <span id="stepPosLabel" class="status-pill">第 1 / 1 小节</span>
+      <button id="stepNextBar" class="btn small" title="下一小节">▶</button>
+      <div id="stepPageStrip" class="step-page-strip"></div>
+      <button id="stepCopyBar" class="btn small" title="把当前小节的四条轨道原样复制到后面所有小节，再逐小节微调">⧉ 本小节复制到后面</button>
+      <span class="nav-label">播放时会自动跳到正在播放的小节</span>
+    </div>
     <div id="stepGrid" class="step-grid"></div>
-    <div class="step-help">四条轨道用法一致：先选这一拍的<strong>细分</strong>（一拍 / 八分 / 三连 / 十六分），再逐个设置子拍。轨1/轨3用下拉选音符，轨2选择和弦级数，轨4点击芯片循环切换鼓声（空 → K 底鼓 → S 军鼓 → H 闭镲 → O 开镲 → C 拍手 → T 通鼓 → R 吊镲）。例如轨4选“4个·十六分”，就能在一拍里排出十六分音符的鼓花。<br>轨道名下方的 <strong>复制 G1</strong> 按钮会把第 1 组（前 4 拍）的<strong>内容原样</strong>复制到 G2–G4：鼓组会连 K/S/H/O/C/T/R 的具体鼓声和空拍一起复制（例如 G1 是 <code>K S K S</code>，复制后 G2–G4 同样是 <code>K S K S</code>），轨1/轨2/轨3 会连同音高与和弦级数一起复制。改完 G1 再点一次即可重新同步后面三组。</div>
+    <div class="step-help">四条轨道用法一致：先选这一拍的<strong>细分</strong>（一拍 / 八分 / 三连 / 十六分），再逐个设置子拍。轨1/轨3用下拉选音符，轨2选择和弦级数，轨4点击芯片循环切换鼓声（空 → K 底鼓 → S 军鼓 → H 闭镲 → O 开镲 → C 拍手 → T 通鼓 → R 吊镲）。例如轨4选“4个·十六分”，就能在一拍里排出十六分音符的鼓花。<br><strong>写更长的段落：</strong>上方「总长度」可以把 Pattern 从 1 小节扩展到 <strong>8 小节（128 步）</strong>，但网格一次只显示 1 小节（16 格），所以用 <strong>◀ ▶ 或直接点小节号</strong>翻页编辑——界面尺寸始终不变。播放时会自动跟着跳到正在播放的小节。做法建议：先写好第 1 小节，点 <strong>⧉ 本小节复制到后面</strong> 把它铺满整段，再逐小节改几处，就能做出“同中有变”的效果。<br>轨道名下方的 <strong>复制 G1</strong> 按钮只在<strong>当前小节内</strong>生效：把本小节第 1 拍（前 4 格）的内容原样复制到本小节第 2–4 拍，鼓组会连 K/S/H/O/C/T/R 的具体鼓声和空拍一起复制（例如第 1 拍是 <code>K S K S</code>，复制后第 2–4 拍同样是 <code>K S K S</code>），轨1/轨2/轨3 会连同音高与和弦级数一起复制。改完第 1 拍再点一次即可重新同步。</div>
 
     <div class="progression-panel">
       <div class="progression-title">🎼 Step 常用和弦进行 <span>点击后直接填入轨2的 16 步</span></div>
@@ -648,7 +679,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
         <button class="progression-btn step-progression" data-prog="pachelbel">I–V–vi–iii–IV–I–IV–V</button>
         <button class="progression-btn step-progression" data-prog="reset">清空轨2</button>
       </div>
-      <div class="custom-prog-row"><button id="btnStepProgPlayOnce" class="btn small primary">▶ Step 播放一遍</button><span class="status-pill">把当前进行填入轨2后完整播放一次</span></div>
+      <div class="custom-prog-row"><button id="btnStepProgPlayOnce" class="btn small primary">▶ Step 播放一遍</button><button id="btnStepBadGuy" class="btn small">🎵 Bad Guy 示范</button><span class="status-pill">一键恢复 Bad Guy intro 的四轨编配（135 BPM）</span></div>
       <div class="progression-note">默认每个和弦占 4 步；三和弦进行会自动延长最后一个和弦，八和弦进行会按 16 步循环压缩。和弦具体音色/七和弦/九和弦类型沿用下方“智能和弦系统”的当前选择。</div>
     </div>
   </div>
@@ -668,7 +699,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
       <h3 class="module-title">独立通道条 (Channel Strip) <span class="help-btn" onclick="showHelp('STRIP')">❓</span></h3>
       <div class="inspector-header"><div class="inspector-tabs"><button class="tab active" data-track="melody">轨1 [旋律]</button><button class="tab" data-track="chord">轨2 [和弦]</button><button class="tab" data-track="bass">轨3 [贝斯]</button><button class="tab" data-track="drums">轨4 [鼓组]</button></div><div class="strip-tools"><button id="btnParamZero" class="btn small" title="把 EQ / 失真 / 合唱 / 延迟 / 混响 / 声像 / ADSR 全部归零，只保留当前振荡器音色">🧹 参数清零</button><button id="btnParamReset" class="btn small" title="恢复当前轨道的出厂默认参数">↺ 参数重置</button><button id="btnParamResetAll" class="btn small" title="恢复全部四条轨道的出厂默认参数">↺ 全部重置</button><span id="stripStatus" class="status-pill"></span></div><select id="presetSelect" class="styled-sel"><option value="">✨ 选择音色预设...</option><option value="citypop">City Pop 电钢</option><option value="funkbass">Funk 合成贝斯</option><option value="shoegaze">Shoegaze 音墙</option><option value="jazzlead">爵士 R&B Lead</option><option value="drumkit">Acoustic Drum Kit</option><option value="save_custom">💾 保存当前为预设</option></select></div>
       <div class="inspector-grid">
-        <div class="param-group"><h4>OSC & FILTER</h4><select id="p_source" class="styled-sel" style="width:100%;margin-bottom:10px"><optgroup label="基础波形"><option value="sawtooth">锯齿波 (Sawtooth)</option><option value="square">方波 (Square)</option><option value="triangle">三角波 (Triangle)</option><option value="sine">正弦波 (Sine)</option></optgroup><optgroup label="键盘乐器"><option value="piano">🎹 三角钢琴 Piano</option><option value="epiano">🎹 电钢琴 Rhodes EP</option><option value="organ">⛪ 管风琴 Organ</option><option value="clav">🎹 古钢琴 Clavinet</option></optgroup><optgroup label="旋律打击乐器"><option value="marimba">🎼 马林巴 Marimba</option><option value="bell">🔔 钟琴 Glockenspiel</option><option value="musicbox">🎵 音乐盒 Music Box</option></optgroup><optgroup label="弦乐"><option value="violin">🎻 小提琴 Violin</option><option value="cello">🎻 大提琴 Cello</option><option value="erhu">🎻 二胡 Erhu</option><option value="harp">🎼 竖琴 Harp</option><option value="pizzicato">🎻 拨弦 Pizzicato</option></optgroup><optgroup label="吉他与弹拨"><option value="guitar">🎸 民谣吉他 Steel Guitar</option><option value="nylonguitar">🎸 尼龙吉他 Nylon Guitar</option><option value="guzheng">🎼 古筝 Guzheng</option></optgroup><optgroup label="管乐"><option value="flute">🎶 长笛 Flute</option><option value="clarinet">🎷 单簧管 Clarinet</option><option value="sax">🎷 中音萨克斯 Alto Sax</option><option value="trumpet">🎺 小号 Trumpet</option></optgroup><optgroup label="其他"><option value="choir">🎤 人声合唱 Choir</option><option value="accordion">🎹 手风琴 Accordion</option><option value="drumkit">🥁 鼓组 Drum Kit</option></optgroup></select><div class="row"><span>滤波型</span><select id="p_filterType" class="styled-sel" style="flex:1;margin:0 6px;padding:3px 6px;font-size:11px"><option value="lowpass">低通 LP</option><option value="highpass">高通 HP</option><option value="bandpass">带通 BP</option><option value="notch">陷波 Notch</option></select></div><div class="row"><span>Cutoff</span><input type="range" id="p_cutoff" min="40" max="12000" step="10"><span id="v_cutoff" class="val-box"></span></div><div class="row"><span>Reso</span><input type="range" id="p_resonance" min="0" max="20" step=".1"><span id="v_resonance" class="val-box"></span></div><h4 style="margin-top:10px">音源特性 (乐器音色微调)</h4><div class="row"><span>明亮度</span><input type="range" id="p_bright" min="0" max="1" step=".01"><span id="v_bright" class="val-box"></span></div><div class="row"><span>延音</span><input type="range" id="p_damp" min="0" max="1" step=".01"><span id="v_damp" class="val-box"></span></div><div class="row"><span>颤音</span><input type="range" id="p_vibrato" min="0" max="1" step=".01"><span id="v_vibrato" class="val-box"></span></div><h4 style="margin-top:10px">ADSR</h4><div class="row"><span>A</span><input type="range" id="p_attack" min=".001" max="2" step=".01"><span id="v_attack" class="val-box"></span></div><div class="row"><span>D</span><input type="range" id="p_decay" min=".01" max="2" step=".01"><span id="v_decay" class="val-box"></span></div><div class="row"><span>S</span><input type="range" id="p_sustain" min="0" max="1" step=".01"><span id="v_sustain" class="val-box"></span></div><div class="row"><span>R</span><input type="range" id="p_release" min=".01" max="4" step=".01"><span id="v_release" class="val-box"></span></div></div>
+        <div class="param-group"><h4>OSC & FILTER</h4><select id="p_source" class="styled-sel" style="width:100%;margin-bottom:10px"><optgroup label="基础波形"><option value="sawtooth">锯齿波 (Sawtooth)</option><option value="square">方波 (Square)</option><option value="triangle">三角波 (Triangle)</option><option value="sine">正弦波 (Sine)</option></optgroup><optgroup label="键盘乐器"><option value="piano">🎹 三角钢琴 Piano</option><option value="epiano">🎹 电钢琴 Rhodes EP</option><option value="organ">⛪ 管风琴 Organ</option><option value="clav">🎹 古钢琴 Clavinet</option></optgroup><optgroup label="旋律打击乐器"><option value="marimba">🎼 马林巴 Marimba</option><option value="bell">🔔 钟琴 Glockenspiel</option><option value="musicbox">🎵 音乐盒 Music Box</option></optgroup><optgroup label="弦乐"><option value="violin">🎻 小提琴 Violin</option><option value="cello">🎻 大提琴 Cello</option><option value="erhu">🎻 二胡 Erhu</option><option value="harp">🎼 竖琴 Harp</option><option value="pizzicato">🎻 拨弦 Pizzicato</option></optgroup><optgroup label="吉他与弹拨"><option value="guitar">🎸 民谣吉他 Steel Guitar</option><option value="nylonguitar">🎸 尼龙吉他 Nylon Guitar</option><option value="guzheng">🎼 古筝 Guzheng</option></optgroup><optgroup label="贝斯"><option value="contrabass">🎻 低音提琴 Contrabass</option><option value="ebass">🎸 电贝斯 Electric Bass</option><option value="synthbass">🎛 合成贝斯 Synth Bass</option></optgroup><optgroup label="管乐"><option value="flute">🎶 长笛 Flute</option><option value="clarinet">🎷 单簧管 Clarinet</option><option value="sax">🎷 中音萨克斯 Alto Sax</option><option value="trumpet">🎺 小号 Trumpet</option></optgroup><optgroup label="其他"><option value="choir">🎤 人声合唱 Choir</option><option value="accordion">🎹 手风琴 Accordion</option><option value="drumkit">🥁 鼓组 Drum Kit</option></optgroup></select><div class="row"><span>滤波型</span><select id="p_filterType" class="styled-sel" style="flex:1;margin:0 6px;padding:3px 6px;font-size:11px"><option value="lowpass">低通 LP</option><option value="highpass">高通 HP</option><option value="bandpass">带通 BP</option><option value="notch">陷波 Notch</option></select></div><div class="row"><span>Cutoff</span><input type="range" id="p_cutoff" min="40" max="12000" step="10"><span id="v_cutoff" class="val-box"></span></div><div class="row"><span>Reso</span><input type="range" id="p_resonance" min="0" max="20" step=".1"><span id="v_resonance" class="val-box"></span></div><h4 style="margin-top:10px">音源特性 (乐器音色微调)</h4><div class="row"><span>明亮度</span><input type="range" id="p_bright" min="0" max="1" step=".01"><span id="v_bright" class="val-box"></span></div><div class="row"><span>延音</span><input type="range" id="p_damp" min="0" max="1" step=".01"><span id="v_damp" class="val-box"></span></div><div class="row"><span>颤音</span><input type="range" id="p_vibrato" min="0" max="1" step=".01"><span id="v_vibrato" class="val-box"></span></div><h4 style="margin-top:10px">ADSR</h4><div class="row"><span>A</span><input type="range" id="p_attack" min=".001" max="2" step=".01"><span id="v_attack" class="val-box"></span></div><div class="row"><span>D</span><input type="range" id="p_decay" min=".01" max="2" step=".01"><span id="v_decay" class="val-box"></span></div><div class="row"><span>S</span><input type="range" id="p_sustain" min="0" max="1" step=".01"><span id="v_sustain" class="val-box"></span></div><div class="row"><span>R</span><input type="range" id="p_release" min=".01" max="4" step=".01"><span id="v_release" class="val-box"></span></div></div>
         <div class="param-group"><h4>EQ & SATURATION</h4><div class="row"><span>High</span><input type="range" id="p_eqHigh" min="-15" max="15" step=".5"><span id="v_eqHigh" class="val-box"></span></div><div class="row"><span>Low</span><input type="range" id="p_eqLow" min="-15" max="15" step=".5"><span id="v_eqLow" class="val-box"></span></div><div class="row"><span>Drive</span><input type="range" id="p_distDrive" min="0" max="100" step="1"><span id="v_distDrive" class="val-box"></span></div><h4 style="margin-top:10px">CHORUS FX</h4><div class="row"><span>Mix</span><input type="range" id="p_chorusMix" min="0" max="1" step=".05"><span id="v_chorusMix" class="val-box"></span></div><div class="row"><span>Rate</span><input type="range" id="p_chorusRate" min=".1" max="10" step=".1"><span id="v_chorusRate" class="val-box"></span></div></div>
         <div class="param-group"><h4>ADVANCED (合成/吉他)</h4><div class="row"><span>八度</span><input type="range" id="p_octave" min="-2" max="2" step="1"><span id="v_octave" class="val-box"></span></div><div class="row"><span>叠加</span><input type="range" id="p_unison" min="0" max="1" step=".25"><span id="v_unison" class="val-box"></span></div><div class="row"><span>Sub低八</span><input type="range" id="p_sub" min="0" max="1" step=".05"><span id="v_sub" class="val-box"></span></div><div class="row"><span>滑音</span><input type="range" id="p_glide" min="0" max=".5" step=".01"><span id="v_glide" class="val-box"></span></div><div class="row"><span>滤波包络</span><input type="range" id="p_filterEnv" min="-1" max="1" step=".05"><span id="v_filterEnv" class="val-box"></span></div><div class="row"><span>Tone</span><input type="range" id="p_driveTone" min="0" max="1" step=".05"><span id="v_driveTone" class="val-box"></span></div><div class="row"><span>压缩</span><input type="range" id="p_compress" min="0" max="1" step=".05"><span id="v_compress" class="val-box"></span></div><div class="row"><span>音量颤音</span><input type="range" id="p_tremolo" min="0" max="1" step=".05"><span id="v_tremolo" class="val-box"></span></div><div class="row"><span>颤音速率</span><input type="range" id="p_tremoloRate" min=".5" max="14" step=".5"><span id="v_tremoloRate" class="val-box"></span></div></div>
         <div class="param-group"><h4>SPATIAL (空间)</h4><div class="row"><span>DlyTime</span><input type="range" id="p_delayTime" min=".05" max="1" step=".05"><span id="v_delayTime" class="val-box"></span></div><div class="row"><span>DlyMix</span><input type="range" id="p_delayMix" min="0" max="1" step=".05"><span id="v_delayMix" class="val-box"></span></div><div class="row"><span>RevMix</span><input type="range" id="p_reverbMix" min="0" max="1" step=".05"><span id="v_reverbMix" class="val-box"></span></div><div class="row"><span>Pan</span><input type="range" id="p_pan" min="-1" max="1" step=".05"><span id="v_pan" class="val-box"></span></div></div>
@@ -782,7 +813,7 @@ const ADVANCED_DEFAULTS={filterType:'lowpass',filterEnv:0,octave:0,unison:0,sub:
 const trackParams={
  melody:{source:'sawtooth',bright:.55,damp:.5,vibrato:0,attack:.05,decay:.3,sustain:.7,release:.8,cutoff:6000,resonance:1,eqLow:0,eqHigh:4,distDrive:0,chorusMix:0,chorusRate:2,pan:0,delayTime:.3,delayMix:.25,reverbMix:.18,...ADVANCED_DEFAULTS},
  chord:{source:'guitar',bright:.55,damp:.6,vibrato:0,attack:.01,decay:1,sustain:.3,release:1.5,cutoff:4000,resonance:1,eqLow:-2,eqHigh:2,distDrive:0,chorusMix:.3,chorusRate:1.5,pan:0,delayTime:.4,delayMix:0,reverbMix:.3,...ADVANCED_DEFAULTS},
- bass:{source:'triangle',bright:.5,damp:.4,vibrato:0,attack:.03,decay:.2,sustain:.8,release:.4,cutoff:800,resonance:2,eqLow:6,eqHigh:0,distDrive:15,chorusMix:0,chorusRate:1,pan:0,delayTime:.3,delayMix:0,reverbMix:0,...ADVANCED_DEFAULTS},
+ bass:{source:'ebass',bright:.5,damp:.4,vibrato:0,attack:.03,decay:.2,sustain:.8,release:.4,cutoff:800,resonance:2,eqLow:6,eqHigh:0,distDrive:15,chorusMix:0,chorusRate:1,pan:0,delayTime:.3,delayMix:0,reverbMix:0,...ADVANCED_DEFAULTS},
  drums:{source:'drumkit',bright:.5,damp:.3,vibrato:0,attack:.001,decay:.1,sustain:.7,release:.08,cutoff:11000,resonance:.5,eqLow:2,eqHigh:3,distDrive:0,chorusMix:.02,chorusRate:2,pan:0,delayTime:.12,delayMix:0,reverbMix:.06,...ADVANCED_DEFAULTS}
 };
 // 出厂默认值快照：用于“参数重置”。必须在任何用户操作之前克隆。
@@ -815,12 +846,16 @@ const INSTRUMENT_SPECS={
  sax:        {type:'wind',gain:0.45,wave:'sawtooth',breath:.05,attack:.06,vib:.5,formant:950,q:2.2,fGain:10},
  trumpet:    {type:'brass',gain:.66,wave:'sawtooth',attack:.045,vib:.18,openRamp:.22},
  choir:      {type:'add',gain:.47,partials:[[1,1,'sine'],[2,.5,'sine'],[3,.26,'sine']],attack:.22,vib:.45,formant:780,q:2.5,fGain:8},
- accordion:  {type:'add',gain:.56,partials:[[1,1,'sawtooth'],[1.006,.65,'sawtooth'],[2,.22,'sawtooth']],attack:.04,vib:.14}
+ accordion:  {type:'add',gain:.56,partials:[[1,1,'sawtooth'],[1.006,.65,'sawtooth'],[2,.22,'sawtooth']],attack:.04,vib:.14},
+ // 贝斯：共振峰压低 + 起音更快，避免低音区糊成一团
+ contrabass: {type:'bow',gain:.44,wave:'sawtooth',formant:420,q:1.5,fGain:10,attack:.055,vib:.16},
+ ebass:      {type:'bow',gain:.52,wave:'sawtooth',formant:900,q:2.4,fGain:11,attack:.008,vib:.12},
+ synthbass:  {type:'add',gain:.46,partials:[[.5,.85,'sine'],[1,1,'sawtooth'],[2,.2,'square'],[3,.07,'sine']],attack:.006}
 };
 const BASIC_WAVE_GAIN={sawtooth:.58,square:.49,triangle:.76,sine:.68,drumkit:.7};
 const timbrePresets={
  citypop:{source:'piano',attack:.05,decay:.8,sustain:.4,release:1.5,cutoff:4500,resonance:1,eqLow:2,eqHigh:3,distDrive:0,chorusMix:.6,chorusRate:.8,pan:0,delayTime:.35,delayMix:.2,reverbMix:.4},
- funkbass:{source:'sawtooth',attack:.01,decay:.15,sustain:.1,release:.1,cutoff:1500,resonance:6,eqLow:8,eqHigh:1,distDrive:10,chorusMix:0,chorusRate:1,pan:0,delayTime:.1,delayMix:0,reverbMix:0},
+ funkbass:{source:'ebass',attack:.01,decay:.15,sustain:.1,release:.1,cutoff:1500,resonance:6,eqLow:8,eqHigh:1,distDrive:10,chorusMix:0,chorusRate:1,pan:0,delayTime:.1,delayMix:0,reverbMix:0},
  shoegaze:{source:'sawtooth',attack:.8,decay:1,sustain:1,release:2.5,cutoff:8000,resonance:2,eqLow:4,eqHigh:6,distDrive:45,chorusMix:.8,chorusRate:4,pan:0,delayTime:.4,delayMix:.6,reverbMix:.9},
  jazzlead:{source:'square',attack:.02,decay:.3,sustain:.6,release:.5,cutoff:3500,resonance:3,eqLow:0,eqHigh:-2,distDrive:5,chorusMix:.2,chorusRate:2,pan:0,delayTime:.25,delayMix:.15,reverbMix:.2},
  drumkit:{source:'drumkit',attack:.001,decay:.1,sustain:.7,release:.08,cutoff:11000,resonance:.5,eqLow:2,eqHigh:3,distDrive:0,chorusMix:.02,chorusRate:2,pan:0,delayTime:.12,delayMix:0,reverbMix:.06}
@@ -1499,15 +1534,30 @@ function updateChords(){
   const rootName=names[((root+dict.root)%12+12)%12];
   const card=document.createElement('div');
   card.className='chord-card';
-  let opts='';
+  // 安全：改用 DOM + textContent 构建。自定义和弦的“显示名称”是用户输入，
+  // 直接拼进 innerHTML 会被当成 HTML 执行（存储型 XSS）。
+  const degSpan=document.createElement('span');
+  degSpan.style.cssText='font-size:12px;font-weight:800;opacity:.7';
+  degSpan.textContent=String(dict.degree||'');
+  const selEl=document.createElement('select');
+  selEl.setAttribute('aria-label',String(dict.degree||'')+' 和弦类型');
   Object.entries(variants).forEach(([key,v])=>{
-   opts+=`<option value="${key}">${v.label} · ${v.name}</option>`;
+   const o=document.createElement('option');
+   o.value=key;
+   o.textContent=String((v&&v.label)||'')+' · '+String((v&&v.name)||'');
+   selEl.appendChild(o);
   });
-  opts+=`<option value="custom">${dict.custom?'custom · 编辑自定义':'custom · 新建自定义'}</option>`;
-  card.innerHTML=`<span style="font-size:12px;font-weight:800;opacity:.7">${dict.degree}</span>
-  <select aria-label="${dict.degree} 和弦类型">${opts}</select>
-  <span style="font-size:15px;font-weight:900">${rootName}${structure.label==='Maj'?'':structure.label}</span>
-  <span style="font-size:9px;color:var(--text-muted);margin-top:3px">${structure.name}</span>`;
+  const cOpt=document.createElement('option');
+  cOpt.value='custom';
+  cOpt.textContent=dict.custom?'custom · 编辑自定义':'custom · 新建自定义';
+  selEl.appendChild(cOpt);
+  const nameSpan=document.createElement('span');
+  nameSpan.style.cssText='font-size:15px;font-weight:900';
+  nameSpan.textContent=rootName+(structure.label==='Maj'?'':String(structure.label||''));
+  const subSpan=document.createElement('span');
+  subSpan.style.cssText='font-size:9px;color:var(--text-muted);margin-top:3px';
+  subSpan.textContent=String(structure.name||'');
+  card.append(degSpan,selEl,nameSpan,subSpan);
   const sel=card.querySelector('select');
   sel.value=current;
   sel.addEventListener('pointerdown',e=>e.stopPropagation());
@@ -1881,8 +1931,10 @@ function stopSequence(update=true){
 function setTransport(t){const e=document.getElementById('transportStatus');if(e)e.textContent=t}
 
 // ========================= STEP =========================
-const STEP_COUNT=16;
-let stepResolution=.25,stepLoopLength=4;
+// 网格一页固定 16 格，界面尺寸永远不变；总长度靠“小节页数”扩展。
+// 注意：默认细分 0.25 拍/步，所以 16 步 = 1 小节，stepTotal/16 = 小节数。
+const STEP_COUNT=16,STEP_PAGE=16,STEP_LENGTHS=[16,32,64,128];
+let stepResolution=.25,stepLoopLength=4,stepTotal=STEP_PAGE,stepPage=0;
 // 轨1旋律、轨2和弦、轨3贝斯：每一拍可细分为 1/2/3/4 个子拍。
 // 轨4鼓组恢复为最初的稳定模式：每一个 Step 只选择一个鼓声，点击循环切换。
 const stepState={
@@ -1891,6 +1943,103 @@ const stepState={
  bass:Array.from({length:STEP_COUNT},()=>({subdiv:1,events:[{pitchOffset:null}]})),
  drums:Array.from({length:STEP_COUNT},()=>({subdiv:1,events:[{pitchOffset:null,drum:null}]}))
 };
+// ---------- Step 默认示范：Bad Guy intro ----------
+// 数字 = 相对当前 Key 主音的半音偏移（换 Key 会整体移调），null = 休止。
+// 默认 Key=C 时落在 A 小调，走向 i – i – i – bVII，与原曲（F# 小调）结构一致。
+// 注意：默认细分是 0.25 拍/步，所以 16 步 = 1 小节（4/4），不是 4 小节。
+// 下面全部按十六分网格写：步 0/4/8/12 是四个拍头，其余为十六分位置。
+// 数字 = 相对当前 Key 主音的半音偏移（换 Key 会整体移调），null = 休止。
+// 默认 Key=C 时落在 A 小调（主音 A = +9），与原曲的 F# 小调结构一致。
+const BAD_GUY_STEP={
+  bpm:135,
+  melody:[9,null,null,null, null,null,12,null, 9,null,null,null, null,null,null,null],
+  chord: [5,null,null,null, 5,null,null,null, 5,null,null,null, 5,null,null,null],
+  bass:  [9,null,null,null, 9,null,null,null, 9,null,null,null, 9,null,12,null],
+  drums: ['kick',null,'closedHat',null, 'snare',null,'closedHat',null,
+          'kick',null,'closedHat',null, 'snare',null,'closedHat','tom']
+};
+// 四条轨道是否全都还是空的（用来判断要不要自动填入示范）
+function isStepBlank(){
+  const pitched=['melody','chord','bass'].every(t=>stepState[t].every(c=>
+    !(c&&Array.isArray(c.events)&&c.events.some(e=>e&&e.pitchOffset!=null))));
+  const drum=stepState.drums.every(c=>
+    !(c&&Array.isArray(c.events)&&c.events.some(e=>e&&e.drum)));
+  return pitched&&drum;
+}
+function applyBadGuyStep(withBpm){
+  ['melody','chord','bass','drums'].forEach(t=>{
+    for(let i=0;i<stepTotal;i++)stepState[t][i]={subdiv:1,events:[{pitchOffset:null,drum:null}]};
+  });
+  ['melody','chord','bass'].forEach(t=>{
+    BAD_GUY_STEP[t].forEach((v,i)=>{if(v!=null)stepState[t][i].events[0].pitchOffset=v});
+  });
+  BAD_GUY_STEP.drums.forEach((v,i)=>{if(v)stepState.drums[i].events[0].drum=v});
+  if(withBpm!==false&&typeof applyBpm==='function')applyBpm(BAD_GUY_STEP.bpm);
+  if(typeof buildStepGrid==='function')buildStepGrid();
+  if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+  if(typeof requestLiveSequenceRefresh==='function')requestLiveSequenceRefresh();
+}
+// ---------- 长度与分页 ----------
+function updateStepLoopLength(){stepResolution=getStepResolution();stepLoopLength=stepTotal*stepResolution;}
+function stepPageCount(){return Math.max(1,Math.ceil(stepTotal/STEP_PAGE));}
+// 改变总长度：扩大补空、缩小截断，已有内容尽量保留
+function resizeStepState(n){
+  n=Math.max(STEP_PAGE,Math.min(128,Math.round(Number(n)||STEP_PAGE)));
+  ['melody','chord','bass','drums'].forEach(t=>{
+    const arr=stepState[t];
+    if(!Array.isArray(arr))return;
+    while(arr.length<n)arr.push({subdiv:1,events:[{pitchOffset:null,drum:null}]});
+    if(arr.length>n)arr.length=n;
+  });
+  stepTotal=n;
+  if(stepPage>stepPageCount()-1)stepPage=stepPageCount()-1;
+  updateStepLoopLength();
+}
+function goStepPage(p){
+  const t=Math.max(0,Math.min(stepPageCount()-1,p));
+  if(t===stepPage){updateStepNav();return}
+  stepPage=t;updateStepNav();buildStepGrid();
+}
+function renderStepPageStrip(){
+  const box=document.getElementById('stepPageStrip');if(!box)return;
+  box.textContent='';
+  for(let i=0;i<stepPageCount();i++){
+    const b=document.createElement('button');
+    b.type='button';b.className='step-page-chip'+(i===stepPage?' active':'');
+    b.textContent=String(i+1);b.title='跳到第 '+(i+1)+' 小节';
+    b.addEventListener('click',()=>goStepPage(i));
+    box.appendChild(b);
+  }
+}
+function updateStepNav(){
+  renderStepPageStrip();
+  const lab=document.getElementById('stepPosLabel');
+  if(lab)lab.textContent='第 '+(stepPage+1)+' / '+stepPageCount()+' 小节';
+  const sel=document.getElementById('stepLength');
+  if(sel&&STEP_LENGTHS.indexOf(stepTotal)>=0)sel.value=String(stepTotal);
+}
+// 把当前小节的四轨内容原样复制到后面所有小节（先铺满、再逐小节微调）
+function copyStepBarToRest(){
+  const start=stepPage*STEP_PAGE;
+  let n=0;
+  for(let p=stepPage+1;p<stepPageCount();p++){
+    for(let k=0;k<STEP_PAGE;k++){
+      const src=start+k,dst=p*STEP_PAGE+k;
+      if(dst>=stepTotal)break;
+      ['melody','chord','bass','drums'].forEach(t=>{
+        ensureStepState(t,src);ensureStepState(t,dst);
+        stepState[t][dst]={subdiv:stepState[t][src].subdiv,
+          events:stepState[t][src].events.map(e=>({pitchOffset:e.pitchOffset,drum:e.drum}))};
+      });
+      n++;
+    }
+  }
+  buildStepGrid();
+  if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+  if(typeof requestLiveSequenceRefresh==='function')requestLiveSequenceRefresh();
+  const st=document.getElementById('projStatus');
+  if(st)st.textContent=n?'已复制 '+n+' 步到后面的小节':'后面没有小节可复制';
+}
 const STEP_SUBDIVISIONS=[
  {value:1,label:'1 · 一拍'},
  {value:2,label:'2 · 八分'},
@@ -1975,7 +2124,14 @@ function renderStepEventSelectors(track,i,cell,root){
 }
 function buildStepGrid(){
  const grid=document.getElementById('stepGrid');if(!grid)return;
- grid.innerHTML='<div></div>'+Array.from({length:STEP_COUNT},(_,i)=>{const g=Math.floor(i/4)+1,b=(i%4)+1;const cls=i%4===0?'step-head step-group-start':'step-head';return `<div class="${cls}" title="第${g}组 · 第${b}拍">G${g}·${b}</div>`}).join('');
+ const pageStart=stepPage*STEP_PAGE;
+ grid.innerHTML='<div></div>'+Array.from({length:STEP_PAGE},(_,k)=>{
+  const i=pageStart+k;
+  if(i>=stepTotal)return '<div class="step-head is-other-bar"></div>';
+  const bar=Math.floor(i/STEP_PAGE)+1,beat=Math.floor((i%STEP_PAGE)/4)+1;
+  const cls=k%4===0?'step-head step-group-start':'step-head';
+  return `<div class="${cls}" title="第 ${bar} 小节 · 第 ${beat} 拍">${k%4===0?bar+'.'+beat:'.'}</div>`;
+ }).join('');
  const root=Number(document.getElementById('keySelect').value)||0;
  const tracks=[['melody','轨1 旋律'],['chord','轨2 和弦'],['bass','轨3 贝斯'],['drums','轨4 鼓组']];
  tracks.forEach(([track,label])=>{
@@ -1985,8 +2141,8 @@ function buildStepGrid(){
   const isDrum=(track==='drums');
   copy.textContent=isDrum?'复制 G1 鼓点':'复制 G1';
   copy.title=isDrum
-    ? '把第 1 组（前 4 拍）的鼓点原样复制到 G2–G4：细分、子拍数量、每个子拍具体是 K/S/H/O/C/T/R 还是空，完全一致'
-    : '把第 1 组（前 4 拍）的内容完整复制到 G2–G4：细分与音高/和弦级数一起复制';
+    ? '把当前小节第 1 拍的鼓点原样复制到本小节第 2–4 拍：细分、子拍数量、每个子拍具体是 K/S/H/O/C/T/R 还是空，完全一致'
+    : '把当前小节第 1 拍的内容完整复制到本小节第 2–4 拍：细分与音高/和弦级数一起复制';
   copy.addEventListener('click',e=>{e.stopPropagation();isDrum?copyDrumRhythmPattern():copyStepContent(track)});
   // 每条轨道一个音量推子（与 DAW 的 Vol 是同一个通道推子，双向同步）
   const volRow=document.createElement('div');volRow.className='step-vol-row';
@@ -2000,7 +2156,8 @@ function buildStepGrid(){
   volRow.append(volIcon,vol);
   lab.append(text,copy,makeStepSmRow(track),volRow);grid.appendChild(lab);
   if(window.paintRange)paintRange(vol);
-  for(let i=0;i<STEP_COUNT;i++){
+  for(let k=0;k<STEP_PAGE;k++){
+   const i=pageStart+k;if(i>=stepTotal)break;
    const c=document.createElement('div');c.className='step-cell';c.dataset.track=track;c.dataset.step=i;if(i%4===0)c.classList.add('step-group-start');
    if(track==='drums'){
     // 鼓组现在与旋律轨一致：先选这一拍的细分（一拍/八分/三连/十六分），
@@ -2035,9 +2192,11 @@ function copyRhythmPattern(track){
 // 鼓组：整小节复制 —— 把第 1 组（前 4 拍）的鼓点原样复制到 G2–G4，
 // 包括细分、子拍数量和每个子拍具体是哪一个鼓声（K / S / H / O / C / T / R / 空）。
 function copyDrumRhythmPattern(){
+ const base=stepPage*STEP_PAGE;   // 只在本小节内复制，翻页后不会改到别的小节
  for(let group=1;group<4;group++){
   for(let beat=0;beat<4;beat++){
-   const srcIndex=beat,dstIndex=group*4+beat;
+   const srcIndex=base+beat,dstIndex=base+group*4+beat;
+   if(dstIndex>=stepTotal)break;
    ensureStepState('drums',srcIndex);ensureStepState('drums',dstIndex);
    const src=stepState.drums[srcIndex],dst=stepState.drums[dstIndex];
    dst.subdiv=src.subdiv;
@@ -2053,9 +2212,11 @@ function copyDrumRhythmPattern(){
 // 复制第1组（前4拍）的全部内容到后面3组（细分 + 音符/和弦级数），用于轨1/轨2/轨3。
 function copyStepContent(track){
  if(!['melody','chord','bass'].includes(track))return;
+ const base=stepPage*STEP_PAGE;   // 只在本小节内复制，翻页后不会改到别的小节
  for(let group=1;group<4;group++){
   for(let beat=0;beat<4;beat++){
-   const srcIndex=beat,dstIndex=group*4+beat;
+   const srcIndex=base+beat,dstIndex=base+group*4+beat;
+   if(dstIndex>=stepTotal)break;
    ensureStepState(track,srcIndex);ensureStepState(track,dstIndex);
    const src=stepState[track][srcIndex],dst=stepState[track][dstIndex];
    dst.subdiv=src.subdiv;
@@ -2074,14 +2235,14 @@ function markRhythmCopyButton(track){
 }
 
 function clearStep(){
- ['melody','chord','bass'].forEach(t=>stepState[t]=Array.from({length:STEP_COUNT},()=>({subdiv:1,events:[{pitchOffset:null}]})));
- stepState.drums=Array.from({length:STEP_COUNT},()=>({subdiv:1,events:[{pitchOffset:null,drum:null}]}));
+['melody','chord','bass'].forEach(t=>stepState[t]=Array.from({length:stepTotal},()=>({subdiv:1,events:[{pitchOffset:null}]})));
+stepState.drums=Array.from({length:stepTotal},()=>({subdiv:1,events:[{pitchOffset:null,drum:null}]}));
  buildStepGrid();stopSequence();
 }
 function buildStepSequence(){
- stepResolution=getStepResolution();stepLoopLength=STEP_COUNT*stepResolution;
+ stepResolution=getStepResolution();stepLoopLength=stepTotal*stepResolution;
  const root=Number(document.getElementById('keySelect').value)||0,events=[];
- for(let i=0;i<STEP_COUNT;i++){
+ for(let i=0;i<stepTotal;i++){
   const start=i*stepResolution,cellDur=stepResolution;
   ['melody','chord','bass'].forEach(track=>{
    ensureStepState(track,i);
@@ -2109,7 +2270,12 @@ function buildStepSequence(){
  }
  return events;
 }
-function markStepPlayhead(local){const idx=Math.max(0,Math.min(STEP_COUNT-1,Math.floor(local/Math.max(stepResolution,.0001))));document.querySelectorAll('.step-cell.current').forEach(c=>c.classList.remove('current'));document.querySelectorAll(`.step-cell[data-step="${idx}"]`).forEach(c=>c.classList.add('current'))}
+function markStepPlayhead(local){
+ const idx=Math.max(0,Math.min(stepTotal-1,Math.floor(local/Math.max(stepResolution,.0001))));
+ // 播放头跨小节时自动翻页；只在真正换页时重建网格，避免每一步都重绘
+ const wantPage=Math.floor(idx/STEP_PAGE);
+ if(wantPage!==stepPage){stepPage=wantPage;updateStepNav();buildStepGrid();}
+ document.querySelectorAll('.step-cell.current').forEach(c=>c.classList.remove('current'));document.querySelectorAll(`.step-cell[data-step="${idx}"]`).forEach(c=>c.classList.add('current'))}
 
 // ==================== PLAYBACK LIVE EDIT ====================
 let liveEditTimer=null;
@@ -2137,7 +2303,7 @@ function zeroTrackParams(){const t=currentEditingTrack;Object.assign(trackParams
 // 参数重置：恢复该轨出厂默认参数。
 function resetTrackParams(){const t=currentEditingTrack;trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));commitTrackParams(t);updateStripStatus('已重置 · '+(TRACK_CN[t]||t))}
 function resetAllTrackParams(){['melody','chord','bass','drums'].forEach(t=>{trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));initAudio();applyLiveTrackParams(t)});commitTrackParams(currentEditingTrack);updateStripStatus('已重置 · 全部四条轨道')}
-function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；| = 小节线。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。自定义和弦可输入相对于根音的半音音程，例如 0,4,7,10,15 = 7♯9。',STEP:'Step Sequencer 是 16 步循环网格。四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲），所以一拍里也能写出八分、三连和十六分的鼓花。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n每条轨道左侧的「复制 G1」会把第 1 组（前 4 拍）的内容完整复制到 G2–G4：鼓组连具体鼓声一起复制（G1 是 K S K S，复制后三组同样是 K S K S），其余轨连同音高/和弦级数一起复制。',KEYBOARD:'点击键盘即可实时发声。键盘显示八度可以独立调整。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
+function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；| = 小节线。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。自定义和弦可输入相对于根音的半音音程，例如 0,4,7,10,15 = 7♯9。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲），所以一拍里也能写出八分、三连和十六分的鼓花。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），其余轨连同音高/和弦级数一起复制。',KEYBOARD:'点击键盘即可实时发声。键盘显示八度可以独立调整。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
 
 
 
@@ -2418,7 +2584,12 @@ function renderCustomProgressionButtons(){
     COMMON_PROGRESSIONS['custom_'+i]=cp.degrees;
     const b=document.createElement('button');
     b.type='button';b.className='progression-btn chord-progression prog-custom';b.dataset.prog='custom_'+i;
-    b.innerHTML=`<span>⭐ ${cp.text||progressionDegreeText(cp.degrees)}</span><span class="prog-del" title="删除这个自定义进行">✕</span>`;
+    // 安全：cp.text 来自用户输入并持久化在 localStorage，改用 textContent 渲染
+    const sp1=document.createElement('span');
+    sp1.textContent='⭐ '+String(cp.text||progressionDegreeText(cp.degrees));
+    const sp2=document.createElement('span');
+    sp2.className='prog-del';sp2.title='删除这个自定义进行';sp2.textContent='✕';
+    b.append(sp1,sp2);
     b.addEventListener('click',e=>{
       if(e.target.classList&&e.target.classList.contains('prog-del')){
         customProgressions.splice(i,1);saveCustomProgressions();renderCustomProgressionButtons();return;
@@ -2482,6 +2653,7 @@ function collectProject(){
     v:1,savedAt:new Date().toISOString(),
     trackParams:JSON.parse(JSON.stringify(trackParams)),
     stepState:JSON.parse(JSON.stringify(stepState)),
+    stepTotal:stepTotal,
     daw:{
       melody:document.getElementById('melodyInput').value,
       chord:document.getElementById('chordInput').value,
@@ -2507,13 +2679,97 @@ function collectProject(){
     trackOctOffsets:JSON.parse(JSON.stringify(trackOctOffsets))
   };
 }
+// ============ 安全：工程数据清洗（字段白名单 + 类型/范围校验） ============
+// 工程 JSON 可能来自他人分享、被手工篡改，或 localStorage 被投毒。
+// 应用前统一清洗：只保留已知字段、校验类型与取值范围、剥离控制字符、限制长度。
+const PROJECT_TRACKS=['melody','chord','bass','drums'];
+function sanitizeProject(p){
+  if(!p||typeof p!=='object'||Array.isArray(p))return null;
+  const isNum=v=>typeof v==='number'&&isFinite(v);
+  const isStr=(v,max)=>typeof v==='string'&&v.length<=(max||2000);
+  const strip=v=>String(v).replace(/[\u0000-\u001F\u007F]/g,' ');
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const o={v:1};
+  // DAW 四轨文本：只允许字符串
+  if(p.daw&&typeof p.daw==='object'){
+    const d={};
+    PROJECT_TRACKS.forEach(t=>{if(isStr(p.daw[t],2000))d[t]=strip(p.daw[t])});
+    o.daw=d;
+  }
+  // 步进音序器状态：结构逐层校验，防止畸形数据进渲染
+  if(p.stepState&&typeof p.stepState==='object'){
+    const s={};
+    PROJECT_TRACKS.forEach(t=>{
+      const arr=p.stepState[t];if(!Array.isArray(arr))return;
+      s[t]=arr.slice(0,128).map(c=>{
+        const cell=(c&&typeof c==='object')?c:{};
+        const subdiv=isNum(cell.subdiv)?clamp(Math.round(cell.subdiv),1,8):1;
+        const events=(Array.isArray(cell.events)?cell.events.slice(0,8):[]).map(e=>{
+          const ev=(e&&typeof e==='object')?e:{};
+          const r={pitchOffset:isNum(ev.pitchOffset)?ev.pitchOffset:null};
+          if(isStr(ev.drum,20))r.drum=strip(ev.drum);
+          return r;
+        });
+        return {subdiv:subdiv,events:events};
+      });
+    });
+    o.stepState=s;
+  }
+  // 通道条参数：只接受数字或短字符串，键名不限制（参数集可能扩展）
+  if(p.trackParams&&typeof p.trackParams==='object'){
+    const tp={};
+    PROJECT_TRACKS.forEach(t=>{
+      const src=p.trackParams[t];if(!src||typeof src!=='object')return;
+      const dst={};
+      Object.keys(src).forEach(k=>{
+        const v=src[k];
+        if(isNum(v))dst[k]=v;else if(isStr(v,40))dst[k]=strip(v);
+      });
+      tp[t]=dst;
+    });
+    o.trackParams=tp;
+  }
+  if(p.vol&&typeof p.vol==='object'){
+    const vv={};PROJECT_TRACKS.forEach(t=>{if(isNum(p.vol[t]))vv[t]=clamp(p.vol[t],0,1)});o.vol=vv;
+  }
+  if(isNum(p.bpm))o.bpm=clamp(p.bpm,30,300);
+  if(isNum(p.key))o.key=clamp(Math.round(p.key),0,11);
+  if(isStr(p.loopBars,8))o.loopBars=p.loopBars;
+  if(typeof p.loop==='boolean')o.loop=p.loop;
+  if(isNum(p.stepResolution))o.stepResolution=clamp(p.stepResolution,0.0625,1);
+  if(isNum(p.stepTotal))o.stepTotal=clamp(Math.round(p.stepTotal),16,128);
+  ['chordPlayStyle','arpRate','dawChordArp','dawChordArpRate'].forEach(k=>{if(isStr(p[k],20))o[k]=strip(p[k])});
+  if(isNum(p.arpSpeed))o.arpSpeed=clamp(p.arpSpeed,0.25,4);
+  if(p.soloMute&&typeof p.soloMute==='object'){
+    const sm={mute:{},solo:{}};
+    PROJECT_TRACKS.forEach(t=>{
+      if(p.soloMute.mute&&p.soloMute.mute[t]!=null)sm.mute[t]=!!p.soloMute.mute[t];
+      if(p.soloMute.solo&&p.soloMute.solo[t]!=null)sm.solo[t]=!!p.soloMute.solo[t];
+    });
+    o.soloMute=sm;
+  }
+  if(p.rollVisible&&typeof p.rollVisible==='object'){
+    const rv={};PROJECT_TRACKS.forEach(t=>{if(p.rollVisible[t]!=null)rv[t]=!!p.rollVisible[t]});o.rollVisible=rv;
+  }
+  if(isNum(p.transpose))o.transpose=clamp(Math.round(p.transpose),-24,24);
+  if(isNum(p.masterVol))o.masterVol=clamp(p.masterVol,0,1);
+  if(Array.isArray(p.userChordSelections))o.userChordSelections=p.userChordSelections.slice(0,8).map(x=>isStr(x,20)?strip(x):'triad');
+  if(p.trackOctOffsets&&typeof p.trackOctOffsets==='object'){
+    const oo={};PROJECT_TRACKS.forEach(t=>{if(isNum(p.trackOctOffsets[t]))oo[t]=clamp(Math.round(p.trackOctOffsets[t]),-3,3)});o.trackOctOffsets=oo;
+  }
+  return o;
+}
 function applyProject(p){
-  if(!p||typeof p!=='object')return false;
+  p=sanitizeProject(p);
+  if(!p)return false;
   try{
     if(p.trackParams)['melody','chord','bass','drums'].forEach(t=>{
       if(p.trackParams[t])trackParams[t]=Object.assign({},trackParams[t],p.trackParams[t]);
     });
-    if(p.stepState)['melody','chord','bass','drums'].forEach(t=>{if(p.stepState[t])stepState[t]=p.stepState[t];});
+    if(p.stepState)['melody','chord','bass','drums'].forEach(t=>{if(Array.isArray(p.stepState[t]))stepState[t]=p.stepState[t];});
+    // 总长度：优先用工程记录的，老工程没有这个字段就按实际步数推断
+    if(p.stepTotal!=null)resizeStepState(p.stepTotal);
+    else resizeStepState(stepState.melody.length||STEP_PAGE);
     // 如果本机存的还是老版默认谱（用户没改过），自动换成新的示范曲
     const dawSrc=(p.daw&&isLegacyDemo(p.daw))?DEMO_SONG:p.daw;
     if(dawSrc)['melody','chord','bass','drums'].forEach(t=>{
@@ -2528,7 +2784,7 @@ function applyProject(p){
     if(p.key!=null){const k=document.getElementById('keySelect');if(k){k.value=String(p.key);k.dispatchEvent(new Event('change'));}}
     if(p.loopBars){const l=document.getElementById('loopBars');if(l)l.value=p.loopBars;}
     if(p.loop!=null){const l=document.getElementById('loopToggle');if(l)l.checked=!!p.loop;}
-    if(p.stepResolution){const s=document.getElementById('stepResolution');if(s){s.value=String(p.stepResolution);}stepResolution=getStepResolution();stepLoopLength=STEP_COUNT*stepResolution;}
+    if(p.stepResolution){const s=document.getElementById('stepResolution');if(s){s.value=String(p.stepResolution);}stepResolution=getStepResolution();updateStepLoopLength();}
     [['chordPlayStyle','chordPlayStyle'],['arpRate','arpRate'],['dawChordArp','dawChordArp'],['dawChordArpRate','dawChordArpRate']].forEach(([k,id])=>{
       if(p[k]!=null){const e=document.getElementById(id);if(e)e.value=String(p[k]);}
     });
@@ -2858,13 +3114,20 @@ function openScoreModal(){
 function closeScoreModal(){const m=document.getElementById('scoreModal');if(m)m.style.display='none'}
 function setScoreStatus(t){const e=document.getElementById('scoreStatus');if(e)e.textContent=t}
 
+// 安全：锁定精确版本 + SRI 完整性校验，防止 CDN 被劫持 / npm 包投毒时执行恶意代码。
+// 升级版本时必须同步更新 TESSERACT_SRI，否则浏览器会拒绝加载（这是有意为之的保护）。
+const TESSERACT_SRC='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+const TESSERACT_SRI='sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F';
 function loadTesseract(){
   if(window.Tesseract)return Promise.resolve(window.Tesseract);
   return new Promise((res,rej)=>{
     const sc=document.createElement('script');
-    sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    sc.src=TESSERACT_SRC;
+    sc.crossOrigin='anonymous';
+    sc.integrity=TESSERACT_SRI;
+    sc.referrerPolicy='no-referrer';
     sc.onload=()=>window.Tesseract?res(window.Tesseract):rej(new Error('识别引擎加载失败'));
-    sc.onerror=()=>rej(new Error('无法联网加载 OCR 引擎'));
+    sc.onerror=()=>rej(new Error('无法联网加载 OCR 引擎（若提示完整性校验失败，说明文件与预期不一致，已阻止加载）'));
     document.head.appendChild(sc);
   });
 }
@@ -3147,7 +3410,23 @@ document.getElementById('scoreApply').addEventListener('click',()=>{
   closeScoreModal();
   if(document.getElementById('scorePlay').checked)playDaw();
 });
-document.getElementById('stepResolution').addEventListener('change',()=>{stepResolution=getStepResolution();stepLoopLength=STEP_COUNT*stepResolution;if(seqRunning&&playbackMode==='step')playStep();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});document.getElementById('keySelect').addEventListener('change',()=>{lastChordNotes=[];updateChords();buildStepGrid();renderKeyboardLabels();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});document.getElementById('showSolfege').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-solfege',!e.target.checked));document.getElementById('showNoteName').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-notename',!e.target.checked));
+document.getElementById('stepResolution').addEventListener('change',()=>{stepResolution=getStepResolution();stepLoopLength=stepTotal*stepResolution;if(seqRunning&&playbackMode==='step')playStep();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});
+// ---- Step 总长度 / 小节分页 ----
+(function(){
+  const lenSel=document.getElementById('stepLength');
+  if(lenSel)lenSel.addEventListener('change',e=>{
+    const n=Number(e.target.value)||STEP_PAGE;
+    if(n<stepTotal&&!confirm('缩短到 '+n+' 步会删除后面 '+(stepTotal-n)+' 步的内容，确定吗？')){updateStepNav();return}
+    resizeStepState(n);stepPage=Math.min(stepPage,stepPageCount()-1);updateStepNav();buildStepGrid();
+    if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+    if(seqRunning&&playbackMode==='step')playStep();
+  });
+  const prev=document.getElementById('stepPrevBar'),next=document.getElementById('stepNextBar');
+  if(prev)prev.addEventListener('click',()=>goStepPage(stepPage-1));
+  if(next)next.addEventListener('click',()=>goStepPage(stepPage+1));
+  const cp=document.getElementById('stepCopyBar');
+  if(cp)cp.addEventListener('click',copyStepBarToRest);
+})();document.getElementById('keySelect').addEventListener('change',()=>{lastChordNotes=[];updateChords();buildStepGrid();renderKeyboardLabels();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});document.getElementById('showSolfege').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-solfege',!e.target.checked));document.getElementById('showNoteName').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-notename',!e.target.checked));
 document.getElementById('loopToggle').addEventListener('change',()=>{if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});/* bpmSlider 与 stepBpmSlider 已统一绑定到 applyBpm()，两处 BPM 实时同步 */document.getElementById('metronomeToggle').addEventListener('change',restartMetronome);document.getElementById('btnMetroTest').addEventListener('click',()=>{initAudio();playMetroClick(true)});['timeNum','timeDen'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{updateMetroText();if(document.getElementById('metronomeToggle').checked)restartMetronome()}));document.getElementById('chordPlayStyle').addEventListener('change',stopChordPerformance);
 // 琶音速度 / 快慢：正在播放时立即按新速度重启；并随工程一起保存
 document.getElementById('arpRate').addEventListener('change',updateArpTimer);
@@ -3187,6 +3466,11 @@ document.getElementById('arpRate').addEventListener('change',updateArpTimer);
   if(once)once.addEventListener('click',()=>playProgressionOnce('daw'));
   const stepOnce=document.getElementById('btnStepProgPlayOnce');
   if(stepOnce)stepOnce.addEventListener('click',()=>playProgressionOnce('step'));
+  const badGuy=document.getElementById('btnStepBadGuy');
+  if(badGuy)badGuy.addEventListener('click',()=>{
+    applyBadGuyStep(true);
+    const st=document.getElementById('projStatus');if(st)st.textContent='已载入 Bad Guy intro';
+  });
 })();
 document.getElementById('btnCustomChord').addEventListener('click',()=>{
  const choice=prompt('请输入要自定义的级数：1=I，2=ii，3=iii，4=IV，5=V，6=vi，7=vii°','1');
@@ -3250,7 +3534,7 @@ function paintRange(el){
 function paintAllRanges(){document.querySelectorAll('input[type=range]').forEach(paintRange)}
 document.addEventListener('input',e=>{if(e.target&&e.target.type==='range')paintRange(e.target)});
 document.addEventListener('change',e=>{if(e.target&&e.target.type==='range')paintRange(e.target)});
-window.addEventListener('load',()=>{initKeyboard();buildStepGrid();updateChords();syncInspectorUI();updateMetroText();bindProgressionButtons();initNewControls();paintAllRanges();restoreLastProject();setTransport('待机 · DAW');
+window.addEventListener('load',()=>{initKeyboard();buildStepGrid();updateChords();syncInspectorUI();updateMetroText();bindProgressionButtons();initNewControls();paintAllRanges();restoreLastProject();if(isStepBlank())applyBadGuyStep(true);updateStepNav();setTransport('待机 · DAW');
   try{
     loadCustomProgressions();renderCustomProgressionButtons();
     buildSoloMuteButtons();renderRollToggles();refreshRollData();drawCurves();
