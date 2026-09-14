@@ -172,6 +172,9 @@ body{
  border-radius:6px;color:var(--track-color,#00e676);font-family:ui-monospace,monospace;
  min-width:54px;text-align:center;position:relative;
 }
+ .track-clear{width:24px;height:24px;flex:0 0 auto;padding:0;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;line-height:1;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:var(--text-muted)}
+.track-clear:hover{border-color:#ff7b72;color:#ff7b72;background:rgba(255,123,114,.14)}
+.step-clear:hover{border-color:#ff7b72;color:#ff7b72;background:rgba(255,123,114,.14)}
 .track-lane.melody{--track-color:var(--melody)}
 .track-lane.chord{--track-color:var(--chord)}
 .track-lane.bass{--track-color:var(--bass)}
@@ -641,14 +644,14 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="transportStatus" class="status-pill">待机 · DAW</span><span id="posReadout" class="status-pill">1 : 1</span><span style="font-size:11px;color:var(--text-muted)">主音量</span><input type="range" id="masterVol" min="0" max="1" step=".01" value="0.58" style="width:86px"><button id="btnMute" class="btn small">🔊</button><canvas id="masterSpectrum" class="master-meter"></canvas></div>
   </div>
 
-  <div class="project-bar"><span class="status-pill">💼 工程</span><button id="btnSaveLocal" class="btn small">💾 保存到本机</button><button id="btnLoadLocal" class="btn small">📂 读取本机</button><button id="btnExportProj" class="btn small">⬇ 导出 JSON</button><label class="btn small" style="cursor:pointer">⬆ 导入 JSON<input type="file" id="importProj" accept=".json,application/json" style="display:none"></label><button id="btnExportWav" class="btn small primary">🎧 导出 WAV</button><span id="projStatus" class="status-pill"></span><span class="status-pill">空格键 = 播放 / 停止</span></div>
+  <div class="project-bar"><span class="status-pill">💼 工程</span><button id="btnSaveLocal" class="btn small">💾 保存到本机</button><button id="btnLoadLocal" class="btn small">📂 读取本机</button><button id="btnExportProj" class="btn small">⬇ 导出 JSON</button><label class="btn small" style="cursor:pointer">⬆ 导入 JSON<input type="file" id="importProj" accept=".json,application/json" style="display:none"></label><button id="btnExportWav" class="btn small primary">🎧 导出 WAV</button><span id="projStatus" class="status-pill"></span></div>
 
   <div class="module">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <h3 class="module-title" style="margin:0">STEP SEQUENCER <span class="help-btn" onclick="showHelp('STEP')">❓</span></h3>
       <div class="toolbar"><button id="btnUseStep" class="btn mode-btn">使用 Step Sequencer</button><button id="btnStepPlay" class="btn primary">▶ Step 播放</button><button id="btnStepClear" class="btn">清空</button><span style="font-size:11px;color:var(--text-muted)">BPM</span><input type="range" id="stepBpmSlider" min="60" max="240" step="1" value="120" style="width:90px"><span id="stepBpmVal" class="val-box">120</span><span style="font-size:11px;color:var(--text-muted)">起音网格</span><select id="stepResolution" class="styled-sel"><option value="1">♩ 四分</option><option value="0.5">♪ 八分</option><option value="0.25" selected>♬ 十六分</option><option value="0.3333333333">♪³ 八分三连</option></select></div>
     </div>
-    <div class="status-pill" style="margin:8px 0 10px">每格 = 一个起音位置；每格可独立选择音高和时值。四条轨道可以同时发声。</div>
+    
     <div class="step-nav">
       <span class="nav-label">总长度</span>
       <select id="stepLength" class="styled-sel" title="Pattern 总长度。1 小节 = 16 个十六分音符；网格一次只显示 1 小节，用下方小节号翻页">
@@ -665,7 +668,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
       <span class="nav-label">播放时会自动跳到正在播放的小节</span>
     </div>
     <div id="stepGrid" class="step-grid"></div>
-    <div class="step-help">四条轨道用法一致：先选这一拍的<strong>细分</strong>（一拍 / 八分 / 三连 / 十六分），再逐个设置子拍。轨1/轨3用下拉选音符，轨2选择和弦级数，轨4点击芯片循环切换鼓声（空 → K 底鼓 → S 军鼓 → H 闭镲 → O 开镲 → C 拍手 → T 通鼓 → R 吊镲）。例如轨4选“4个·十六分”，就能在一拍里排出十六分音符的鼓花。<br><strong>写更长的段落：</strong>上方「总长度」可以把 Pattern 从 1 小节扩展到 <strong>8 小节（128 步）</strong>，但网格一次只显示 1 小节（16 格），所以用 <strong>◀ ▶ 或直接点小节号</strong>翻页编辑——界面尺寸始终不变。播放时会自动跟着跳到正在播放的小节。做法建议：先写好第 1 小节，点 <strong>⧉ 本小节复制到后面</strong> 把它铺满整段，再逐小节改几处，就能做出“同中有变”的效果。<br>轨道名下方的 <strong>复制 G1</strong> 按钮只在<strong>当前小节内</strong>生效：把本小节第 1 拍（前 4 格）的内容原样复制到本小节第 2–4 拍，鼓组会连 K/S/H/O/C/T/R 的具体鼓声和空拍一起复制（例如第 1 拍是 <code>K S K S</code>，复制后第 2–4 拍同样是 <code>K S K S</code>），轨1/轨2/轨3 会连同音高与和弦级数一起复制。改完第 1 拍再点一次即可重新同步。</div>
+    
 
     <div class="progression-panel">
       <div class="progression-title">🎼 Step 常用和弦进行 <span>点击后直接填入轨2的 16 步</span></div>
@@ -679,8 +682,8 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
         <button class="progression-btn step-progression" data-prog="pachelbel">I–V–vi–iii–IV–I–IV–V</button>
         <button class="progression-btn step-progression" data-prog="reset">清空轨2</button>
       </div>
-      <div class="custom-prog-row"><button id="btnStepProgPlayOnce" class="btn small primary">▶ Step 播放一遍</button><button id="btnStepBadGuy" class="btn small">🎵 Bad Guy 示范</button><span class="status-pill">一键恢复 Bad Guy intro 的四轨编配（135 BPM）</span></div>
-      <div class="progression-note">默认每个和弦占 4 步；三和弦进行会自动延长最后一个和弦，八和弦进行会按 16 步循环压缩。和弦具体音色/七和弦/九和弦类型沿用下方“智能和弦系统”的当前选择。</div>
+      <div class="custom-prog-row"><button id="btnStepProgPlayOnce" class="btn small primary">▶ Step 播放一遍</button><button id="btnStepDemo" class="btn small">🎵 欢乐颂示范</button></div>
+      
     </div>
   </div>
 
@@ -689,10 +692,10 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3 class="module-title">DAW 多轨音序器 <span class="help-btn" onclick="showHelp('DAW')">❓</span></h3><button id="btnUseDaw" class="btn mode-btn selected">使用 DAW 多轨</button></div>
       <div class="track-legend"><span class="legend-chip"><i class="legend-dot melody"></i>蓝色 = 轨1 旋律</span><span class="legend-chip"><i class="legend-dot chord"></i>紫色 = 轨2 和弦</span><span class="legend-chip"><i class="legend-dot bass"></i>橙色 = 轨3 贝斯</span><span class="legend-chip"><i class="legend-dot drums"></i>红色 = 轨4 鼓组</span></div>
       <div class="daw-controls"><button id="btnPlay" class="btn primary">▶ 播放</button><button id="btnStop" class="btn">⏹ 停止</button><span style="font-size:12px">BPM</span><input type="range" id="bpmSlider" min="60" max="240" value="120" style="width:80px"><span id="bpmVal" class="val-box">120</span><label class="status-pill"><input type="checkbox" id="loopToggle" checked> 循环</label><select id="loopBars" class="styled-sel"><option value="auto">自动循环</option><option value="1">1 小节</option><option value="2">2 小节</option><option value="4" selected>4 小节</option><option value="8">8 小节</option></select><span style="font-size:12px;color:var(--text-muted)">轨2和弦</span><select id="dawChordArp" class="styled-sel" title="DAW 轨2（和弦）的发声方式：柱式 = 同时发声；琶音 = 在该和弦的时值内依次弹出"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><select id="dawChordArpRate" class="styled-sel" title="琶音每个音的时值"><option value="0.125">32分</option><option value="0.25" selected>16分</option><option value="0.5">8分</option><option value="1">4分</option></select><button id="btnDemoSong" class="btn" title="把四条轨道恢复成自带的示范曲（C 大调 I–V–vi–IV）">🎵 示范曲</button><button id="btnScoreImport" class="btn primary">📄 读谱导入</button><button id="btnMultiWrite" class="btn primary" style="margin-left:auto">📝 手机触控写谱 / 全局展开</button></div>
-      <div class="track-lane melody"><span class="track-label">轨1（旋律）</span><span id="oct_melody" class="oct-badge">+0 8va</span><input type="text" id="melodyInput" class="track-input" value="5 - [3 5] 6 | 5 - 7, 2 | 1 - [3 1] 2 | 1 - - -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_melody" min="0" max="1" step="0.05" value="1"></div></div>
-      <div class="track-lane chord"><span class="track-label">轨2（和弦）</span><span id="oct_chord" class="oct-badge">+0 8va</span><input type="text" id="chordInput" class="track-input" value="1 - - - | 5 - - - | 6 - - - | 4 - - -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_chord" min="0" max="1" step="0.05" value="0.7"></div></div>
-      <div class="track-lane bass"><span class="track-label">轨3（贝斯）</span><span id="oct_bass" class="oct-badge">+0 8va</span><input type="text" id="bassInput" class="track-input" value="1 - 5 - | 5 - 2 - | 6 - 3 - | 4 - 1 -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_bass" min="0" max="1" step="0.05" value="0.9"></div></div>
-      <div class="track-lane drums"><span class="track-label">轨4（鼓组）</span><span class="oct-badge">DRUM</span><input type="text" id="drumsInput" class="track-input" value="K S K S | K S CH S | K S K S | K S K T"><div class="vol-box"><span>Vol</span><input type="range" id="vol_drums" min="0" max="1" step="0.05" value="0.9"></div><div style="flex-basis:100%"></div><div class="drum-legend"><button class="drum-pad" data-drum="kick"><b>Q</b>Kick<div class="drum-note">底鼓</div></button><button class="drum-pad" data-drum="snare"><b>W</b>Snare<div class="drum-note">军鼓</div></button><button class="drum-pad" data-drum="closedHat"><b>E</b>Closed Hat<div class="drum-note">闭镲</div></button><button class="drum-pad" data-drum="openHat"><b>R</b>Open Hat<div class="drum-note">开镲</div></button><button class="drum-pad" data-drum="clap"><b>T</b>Clap<div class="drum-note">拍手</div></button><button class="drum-pad" data-drum="tom"><b>Y</b>Tom<div class="drum-note">通鼓</div></button><button class="drum-pad" data-drum="crash"><b>U</b>Crash<div class="drum-note">吊镲</div></button></div></div>
+      <div class="track-lane melody"><span class="track-label">轨1（旋律）</span><span id="oct_melody" class="oct-badge">+0 8va</span><input type="text" id="melodyInput" class="track-input" value="5 - [3 5] 6 | 5 - 7, 2 | 1 - [3 1] 2 | 1 - - -"><button class="track-clear" data-clear="melody" title="只清空轨1（旋律）的内容，其他轨道不受影响">✕</button><div class="vol-box"><span>Vol</span><input type="range" id="vol_melody" min="0" max="1" step="0.05" value="1"></div></div>
+      <div class="track-lane chord"><span class="track-label">轨2（和弦）</span><span id="oct_chord" class="oct-badge">+0 8va</span><input type="text" id="chordInput" class="track-input" value="1 - - - | 5 - - - | 6 - - - | 4 - - -"><button class="track-clear" data-clear="chord" title="只清空轨2（和弦）的内容，其他轨道不受影响">✕</button><div class="vol-box"><span>Vol</span><input type="range" id="vol_chord" min="0" max="1" step="0.05" value="0.7"></div></div>
+      <div class="track-lane bass"><span class="track-label">轨3（贝斯）</span><span id="oct_bass" class="oct-badge">+0 8va</span><input type="text" id="bassInput" class="track-input" value="1 - 5 - | 5 - 2 - | 6 - 3 - | 4 - 1 -"><button class="track-clear" data-clear="bass" title="只清空轨3（贝斯）的内容，其他轨道不受影响">✕</button><div class="vol-box"><span>Vol</span><input type="range" id="vol_bass" min="0" max="1" step="0.05" value="0.9"></div></div>
+      <div class="track-lane drums"><span class="track-label">轨4（鼓组）</span><span class="oct-badge">DRUM</span><input type="text" id="drumsInput" class="track-input" value="K S K S | K S CH S | K S K S | K S K T"><button class="track-clear" data-clear="drums" title="只清空轨4（鼓组）的内容，其他轨道不受影响">✕</button><div class="vol-box"><span>Vol</span><input type="range" id="vol_drums" min="0" max="1" step="0.05" value="0.9"></div><div style="flex-basis:100%"></div><div class="drum-legend"><button class="drum-pad" data-drum="kick"><b>Q</b>Kick<div class="drum-note">底鼓</div></button><button class="drum-pad" data-drum="snare"><b>W</b>Snare<div class="drum-note">军鼓</div></button><button class="drum-pad" data-drum="closedHat"><b>E</b>Closed Hat<div class="drum-note">闭镲</div></button><button class="drum-pad" data-drum="openHat"><b>R</b>Open Hat<div class="drum-note">开镲</div></button><button class="drum-pad" data-drum="clap"><b>T</b>Clap<div class="drum-note">拍手</div></button><button class="drum-pad" data-drum="tom"><b>Y</b>Tom<div class="drum-note">通鼓</div></button><button class="drum-pad" data-drum="crash"><b>U</b>Crash<div class="drum-note">吊镲</div></button></div></div>
     </div>
 
     <div class="module">
@@ -727,9 +730,9 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
     <div class="roll-note">横轴 = 时间（小节 / 拍），纵轴 = 音高；底部是鼓组轨（K 底鼓 · S 军鼓 · H 闭镲 · O 开镲 · C 拍手 · T 通鼓 · R 吊镲）。播放时绿色竖线是实时播放头，正在发声的音会高亮。点击右上角的轨道名可以单独隐藏 / 显示该轨。</div>
   </div>
 
-  <div class="module"><div class="metronome-panel"><strong style="color:var(--accent)">🎵 独立节拍器</strong><label class="status-pill"><input type="checkbox" id="metronomeToggle"> 开启</label><span style="font-size:11px">拍号</span><select id="timeNum" class="styled-sel"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>12</option></select><span style="font-size:18px;font-weight:900">/</span><select id="timeDen" class="styled-sel"><option>2</option><option selected>4</option><option>8</option><option>16</option></select><button id="btnMetroTest" class="btn small">试听一拍</button><span id="metroSignatureText" class="status-pill">4/4</span><span id="beatLight" class="beat-light"></span><span class="small-note">BPM 与全局音序器统一。</span></div></div>
+  <div class="module"><div class="metronome-panel"><strong style="color:var(--accent)">🎵 独立节拍器</strong><label class="status-pill"><input type="checkbox" id="metronomeToggle"> 开启</label><span style="font-size:11px">拍号</span><select id="timeNum" class="styled-sel"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>12</option></select><span style="font-size:18px;font-weight:900">/</span><select id="timeDen" class="styled-sel"><option>2</option><option selected>4</option><option>8</option><option>16</option></select><button id="btnMetroTest" class="btn small">试听一拍</button><span id="metroSignatureText" class="status-pill">4/4</span><span id="beatLight" class="beat-light"></span></div></div>
 
-  <div class="module"><div class="chord-top"><h3 class="module-title" style="margin:0">智能和弦系统 + 琶音器 <span class="help-btn" onclick="showHelp('CHORD')">❓</span></h3><div class="toolbar"><label style="font-size:12px;cursor:pointer"><input type="checkbox" id="toggleVoiceLeading" checked> 平滑就近连接</label><select id="keySelect" class="styled-sel"><option value="0">C 大调</option><option value="1">Db 大调</option><option value="2">D 大调</option><option value="3">Eb 大调</option><option value="4">E 大调</option><option value="5">F 大调</option><option value="6">Gb 大调</option><option value="7">G 大调</option><option value="8">Ab 大调</option><option value="9">A 大调</option><option value="10">Bb 大调</option><option value="11">B 大调</option></select></div></div><div class="chord-arp-controls"><span style="font-size:11px;color:var(--text-muted)">和弦播放方式</span><select id="chordPlayStyle" class="styled-sel"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><span style="font-size:11px;color:var(--text-muted)">琶音速度</span><select id="arpRate" class="styled-sel"><option value="0.0625">64分音符</option><option value="0.125">32分音符</option><option value="0.25" selected>16分音符</option><option value="0.5">8分音符</option><option value="1">4分音符</option></select><span style="font-size:11px;color:var(--text-muted)">快慢</span><input type="range" id="arpSpeed" min="0.25" max="4" step="0.05" value="1" style="width:96px" title="琶音快慢倍率：向左拖 = 更慢，向右拖 = 更快（0.25× ~ 4×）"><span id="arpSpeedVal" class="val-box">1.00×</span><button id="btnCustomChord" class="btn small">🎛 自定义和弦</button><span class="small-note">按住和弦卡片听连续琶音；松开停止。「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。</span></div><div class="chords-grid" id="chordsGrid"></div>
+  <div class="module"><div class="chord-top"><h3 class="module-title" style="margin:0">智能和弦系统 + 琶音器 <span class="help-btn" onclick="showHelp('CHORD')">❓</span></h3><div class="toolbar"><label style="font-size:12px;cursor:pointer"><input type="checkbox" id="toggleVoiceLeading" checked> 平滑就近连接</label><select id="keySelect" class="styled-sel"><option value="0">C 大调</option><option value="1">Db 大调</option><option value="2">D 大调</option><option value="3">Eb 大调</option><option value="4">E 大调</option><option value="5">F 大调</option><option value="6">Gb 大调</option><option value="7">G 大调</option><option value="8">Ab 大调</option><option value="9">A 大调</option><option value="10">Bb 大调</option><option value="11">B 大调</option></select></div></div><div class="chord-arp-controls"><span style="font-size:11px;color:var(--text-muted)">和弦播放方式</span><select id="chordPlayStyle" class="styled-sel"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><span style="font-size:11px;color:var(--text-muted)">琶音速度</span><select id="arpRate" class="styled-sel"><option value="0.0625">64分音符</option><option value="0.125">32分音符</option><option value="0.25" selected>16分音符</option><option value="0.5">8分音符</option><option value="1">4分音符</option></select><span style="font-size:11px;color:var(--text-muted)">快慢</span><input type="range" id="arpSpeed" min="0.25" max="4" step="0.05" value="1" style="width:96px" title="琶音快慢倍率：向左拖 = 更慢，向右拖 = 更快（0.25× ~ 4×）"><span id="arpSpeedVal" class="val-box">1.00×</span><button id="btnCustomChord" class="btn small">🎛 自定义和弦</button></div><div class="chords-grid" id="chordsGrid"></div>
 
     <div class="progression-panel">
       <div class="progression-title">🎹 常用和弦进行 <span>点击后写入 DAW 轨2，并可立即播放试听</span></div>
@@ -750,7 +753,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
         <button id="btnProgPlayOnce" class="btn small primary">▶ 播放一遍</button>
         <span id="customProgStatus" class="status-pill">未选择</span>
       </div>
-      <div class="progression-note">当前 Key 会自动决定实际和弦名称；例如在 C 大调中 I–V–vi–IV = C–G–Am–F。当前和弦卡片所选的类型（Maj7、m7、9、自定义等）会用于轨2播放。<strong>自定义进行</strong>支持 1～7 数字或 I/ii/iii/IV/V/vi/vii° 级数，用空格、逗号或短横线分隔，保存后会作为一个按钮出现（点按钮应用，点 ✕ 删除）。<strong>▶ 播放一遍</strong>会把当前选中的进行写入轨2并完整播放一次（自动临时关闭循环）。</div>
+      
     </div>
   </div>
 
@@ -763,9 +766,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 <div id="scoreModal" class="modal-overlay" style="display:none">
   <div class="modal-content" style="max-width:780px">
     <h3 style="color:var(--accent);margin:0">📄 读谱 · 简谱导入</h3>
-    <div class="custom-chord-help">支持三种输入：<b>① 上传简谱图片</b>（自动 OCR 识别，首次使用需联网加载识别引擎）；<b>② 上传 .txt 文本</b>；<b>③ 直接粘贴文本</b>。识别后会清洗成 DAW 语法（去掉歌词、数字间补空格、识别调号与速度），可在这里手动修正后再写入轨道。<br>
-      <b>节奏识别规则：</b>减时线（八分/十六分）支持三种写法 —— 数字后跟 <code>1_</code> / <code>1_2_</code>、数字后跟两个下划线 <code>1__</code>、音符行下面另起一行 <code>_ _ _</code>（叠两行即十六分）；附点写作 <code>1.</code>；增时线 <code>1 -</code> 与小节线 <code>|</code> 照常保留。识别结果会转成 <code>[1 2]</code>（八分）、<code>[[1 2 3 4]]</code>（十六分）、<code>1.</code>（附点）。<br>
-      注意：图片识别能否读出减时线取决于图片清晰度；识别不到时整行会按四分音符处理，可在下方手动补括号。高低音点OCR 也拿不到，需要自行补 <code>1'</code>、<code>1,</code>。</div>
+    <div class="custom-chord-help">三种输入：上传简谱图片（OCR 自动识别，首次需联网）、上传 .txt、直接粘贴。清洗后的语法见 DAW 的 ❓ 帮助。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <label class="btn small" style="cursor:pointer">🖼 上传图片<input type="file" id="scoreImage" accept="image/*" style="display:none"></label>
       <label class="btn small" style="cursor:pointer">📄 上传文本<input type="file" id="scoreText" accept=".txt,.md,.text,text/plain" style="display:none"></label>
@@ -1943,20 +1944,18 @@ const stepState={
  bass:Array.from({length:STEP_COUNT},()=>({subdiv:1,events:[{pitchOffset:null}]})),
  drums:Array.from({length:STEP_COUNT},()=>({subdiv:1,events:[{pitchOffset:null,drum:null}]}))
 };
-// ---------- Step 默认示范：Bad Guy intro ----------
+// ---------- Step 默认示范：欢乐颂（Ode to Joy）----------
+// 用四分网格（每步 = 1 拍），16 步 = 4 小节，正好放下主题句。
 // 数字 = 相对当前 Key 主音的半音偏移（换 Key 会整体移调），null = 休止。
-// 默认 Key=C 时落在 A 小调，走向 i – i – i – bVII，与原曲（F# 小调）结构一致。
-// 注意：默认细分是 0.25 拍/步，所以 16 步 = 1 小节（4/4），不是 4 小节。
-// 下面全部按十六分网格写：步 0/4/8/12 是四个拍头，其余为十六分位置。
-// 数字 = 相对当前 Key 主音的半音偏移（换 Key 会整体移调），null = 休止。
-// 默认 Key=C 时落在 A 小调（主音 A = +9），与原曲的 F# 小调结构一致。
-const BAD_GUY_STEP={
-  bpm:135,
-  melody:[9,null,null,null, null,null,12,null, 9,null,null,null, null,null,null,null],
-  chord: [5,null,null,null, 5,null,null,null, 5,null,null,null, 5,null,null,null],
-  bass:  [9,null,null,null, 9,null,null,null, 9,null,null,null, 9,null,12,null],
-  drums: ['kick',null,'closedHat',null, 'snare',null,'closedHat',null,
-          'kick',null,'closedHat',null, 'snare',null,'closedHat','tom']
+// 默认 Key=C：旋律 3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 3 2 2 −，和声 I – V – I – I/V。
+const ODE_TO_JOY={
+  bpm:112,
+  resolution:1,
+  melody:[4,4,5,7, 7,5,4,2, 0,0,2,4, 4,2,2,null],
+  chord: [0,null,null,null, 4,null,null,null, 0,null,null,null, 0,null,4,null],
+  bass:  [0,null,7,null, 7,null,2,null, 0,null,7,null, 0,null,7,null],
+  drums: ['kick',null,'snare',null, 'kick',null,'snare',null,
+          'kick',null,'snare',null, 'kick',null,'snare',null]
 };
 // 四条轨道是否全都还是空的（用来判断要不要自动填入示范）
 function isStepBlank(){
@@ -1966,15 +1965,19 @@ function isStepBlank(){
     !(c&&Array.isArray(c.events)&&c.events.some(e=>e&&e.drum)));
   return pitched&&drum;
 }
-function applyBadGuyStep(withBpm){
+function applyOdeToJoy(withBpm){
+  // 欢乐颂用四分网格：先把细分切成“每步 1 拍”，16 步 = 4 小节
+  const sr=document.getElementById('stepResolution');
+  if(sr&&ODE_TO_JOY.resolution)sr.value=String(ODE_TO_JOY.resolution);
+  updateStepLoopLength();
   ['melody','chord','bass','drums'].forEach(t=>{
     for(let i=0;i<stepTotal;i++)stepState[t][i]={subdiv:1,events:[{pitchOffset:null,drum:null}]};
   });
   ['melody','chord','bass'].forEach(t=>{
-    BAD_GUY_STEP[t].forEach((v,i)=>{if(v!=null)stepState[t][i].events[0].pitchOffset=v});
+    ODE_TO_JOY[t].forEach((v,i)=>{if(v!=null&&i<stepTotal)stepState[t][i].events[0].pitchOffset=v});
   });
-  BAD_GUY_STEP.drums.forEach((v,i)=>{if(v)stepState.drums[i].events[0].drum=v});
-  if(withBpm!==false&&typeof applyBpm==='function')applyBpm(BAD_GUY_STEP.bpm);
+  ODE_TO_JOY.drums.forEach((v,i)=>{if(v&&i<stepTotal)stepState.drums[i].events[0].drum=v});
+  if(withBpm!==false&&typeof applyBpm==='function')applyBpm(ODE_TO_JOY.bpm);
   if(typeof buildStepGrid==='function')buildStepGrid();
   if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
   if(typeof requestLiveSequenceRefresh==='function')requestLiveSequenceRefresh();
@@ -2154,7 +2157,7 @@ function buildStepGrid(){
   vol.title='该轨音量（与 DAW 里的 Vol 是同一个通道推子，双向同步）';
   vol.addEventListener('input',e=>{const d=document.getElementById('vol_'+track);if(d)d.value=e.target.value;applyVolumes();});
   volRow.append(volIcon,vol);
-  lab.append(text,copy,makeStepSmRow(track),volRow);grid.appendChild(lab);
+  lab.append(text,copy,makeStepClearBtn(track),makeStepSmRow(track),volRow);grid.appendChild(lab);
   if(window.paintRange)paintRange(vol);
   for(let k=0;k<STEP_PAGE;k++){
    const i=pageStart+k;if(i>=stepTotal)break;
@@ -2303,7 +2306,7 @@ function zeroTrackParams(){const t=currentEditingTrack;Object.assign(trackParams
 // 参数重置：恢复该轨出厂默认参数。
 function resetTrackParams(){const t=currentEditingTrack;trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));commitTrackParams(t);updateStripStatus('已重置 · '+(TRACK_CN[t]||t))}
 function resetAllTrackParams(){['melody','chord','bass','drums'].forEach(t=>{trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));initAudio();applyLiveTrackParams(t)});commitTrackParams(currentEditingTrack);updateStripStatus('已重置 · 全部四条轨道')}
-function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；| = 小节线。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。自定义和弦可输入相对于根音的半音音程，例如 0,4,7,10,15 = 7♯9。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲），所以一拍里也能写出八分、三连和十六分的鼓花。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），其余轨连同音高/和弦级数一起复制。',KEYBOARD:'点击键盘即可实时发声。键盘显示八度可以独立调整。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
+function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；\n\n【快捷键】空格键 = 播放 / 停止。【节拍器】BPM 与全局音序器统一。【读谱导入】支持三种输入：上传简谱图片（OCR 自动识别，首次使用需联网加载识别引擎）、上传 .txt 文本、直接粘贴文本；识别后会自动清洗成上面的 DAW 语法（去歌词、补空格、识别调号与速度），可手动修正后再写入轨道。注意：图片识别只能读出音符数字，八分音符的下划线、高低音点这类信息识别不出来，需要在下方补 [1 2]、1\'、1,。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。\n\n【试听与琶音】按住和弦卡片听连续琶音，松开停止：「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。当前 Key 会自动决定实际和弦名称（例如 C 大调中 I–V–vi–IV = C–G–Am–F），卡片当前选择的和弦类型也会沿用到轨2播放。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲），所以一拍里也能写出八分、三连和十六分的鼓花。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），\n\n【格子怎么用】每格 = 一个起音位置，可独立选择音高与时值，四条轨道同时发声。常用和弦进行按钮会自动把进行填入轨2：默认每个和弦占 4 步，三和弦进行会自动延长最后一个和弦，八和弦进行按 16 步循环压缩。',KEYBOARD:'点击键盘即可实时发声。键盘显示八度可以独立调整。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
 
 
 
@@ -2549,6 +2552,34 @@ function makeStepSmRow(track){
   row.innerHTML=`<button class="sm-btn solo" data-sm="solo" data-track="${track}" title="Solo：只播放这一轨">S</button><button class="sm-btn mute" data-sm="mute" data-track="${track}" title="Mute：静音这一轨">M</button>`;
   row.querySelectorAll('.sm-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();toggleTrackSM(b.dataset.track,b.dataset.sm)}));
   return row;
+}
+// 单轨清除：Step 侧只清当前小节（与「复制 G1」的页内语义一致）
+function makeStepClearBtn(track){
+  const b=document.createElement('button');
+  b.type='button';b.className='sm-btn step-clear';b.dataset.clear=track;
+  b.textContent='✕';
+  b.title='只清空'+(TRACK_CN[track]||track)+'在当前小节的内容，其他轨道和其他小节不受影响';
+  b.addEventListener('click',e=>{e.stopPropagation();clearStepTrack(track)});
+  return b;
+}
+function clearStepTrack(track){
+  const base=stepPage*STEP_PAGE;
+  for(let k=0;k<STEP_PAGE;k++){
+    const i=base+k;if(i>=stepTotal)break;
+    stepState[track][i]={subdiv:1,events:[{pitchOffset:null,drum:null}]};
+  }
+  buildStepGrid();
+  if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+  if(typeof requestLiveSequenceRefresh==='function')requestLiveSequenceRefresh();
+}
+// 单轨清除：DAW 侧清空这一轨的谱面文本
+function clearDawTrack(t){
+  const el=document.getElementById(t+'Input');
+  if(!el)return;
+  el.value='';
+  lastChordNotes=[];
+  if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+  if(typeof requestLiveSequenceRefresh==='function')requestLiveSequenceRefresh();
 }
 
 // ========================= 自定义和弦进行 / 播放一遍 =========================
@@ -3466,10 +3497,13 @@ document.getElementById('arpRate').addEventListener('change',updateArpTimer);
   if(once)once.addEventListener('click',()=>playProgressionOnce('daw'));
   const stepOnce=document.getElementById('btnStepProgPlayOnce');
   if(stepOnce)stepOnce.addEventListener('click',()=>playProgressionOnce('step'));
-  const badGuy=document.getElementById('btnStepBadGuy');
-  if(badGuy)badGuy.addEventListener('click',()=>{
-    applyBadGuyStep(true);
-    const st=document.getElementById('projStatus');if(st)st.textContent='已载入 Bad Guy intro';
+  const demo=document.getElementById('btnStepDemo');
+  if(demo)demo.addEventListener('click',()=>{
+    applyOdeToJoy(true);
+    const st=document.getElementById('projStatus');if(st)st.textContent='已载入欢乐颂示范';
+  });
+  document.querySelectorAll('.track-clear').forEach(b=>{
+    b.addEventListener('click',()=>clearDawTrack(b.dataset.clear));
   });
 })();
 document.getElementById('btnCustomChord').addEventListener('click',()=>{
@@ -3534,7 +3568,7 @@ function paintRange(el){
 function paintAllRanges(){document.querySelectorAll('input[type=range]').forEach(paintRange)}
 document.addEventListener('input',e=>{if(e.target&&e.target.type==='range')paintRange(e.target)});
 document.addEventListener('change',e=>{if(e.target&&e.target.type==='range')paintRange(e.target)});
-window.addEventListener('load',()=>{initKeyboard();buildStepGrid();updateChords();syncInspectorUI();updateMetroText();bindProgressionButtons();initNewControls();paintAllRanges();restoreLastProject();if(isStepBlank())applyBadGuyStep(true);updateStepNav();setTransport('待机 · DAW');
+window.addEventListener('load',()=>{initKeyboard();buildStepGrid();updateChords();syncInspectorUI();updateMetroText();bindProgressionButtons();initNewControls();paintAllRanges();restoreLastProject();if(isStepBlank())applyOdeToJoy(true);updateStepNav();setTransport('待机 · DAW');
   try{
     loadCustomProgressions();renderCustomProgressionButtons();
     buildSoloMuteButtons();renderRollToggles();refreshRollData();drawCurves();
