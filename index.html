@@ -355,8 +355,9 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 .piano-wrapper{
  display:flex;background:linear-gradient(180deg,#080b10,#0b0f15);padding:16px;border-radius:12px;
  overflow-x:auto;border:1px solid rgba(255,255,255,.06);box-shadow:inset 0 2px 14px rgba(0,0,0,.6);
+ width:100%;min-width:0;box-sizing:border-box;
 }
-.piano{position:relative;height:164px;user-select:none}
+.piano{position:relative;height:164px;user-select:none;flex:0 0 auto}
 .key{
  position:absolute;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;
  justify-content:flex-end;align-items:center;padding-bottom:6px;font-weight:bold;
@@ -482,12 +483,64 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 .progression-btn.active{background:var(--accent);color:#000;border-color:var(--accent);box-shadow:0 4px 16px rgba(0,230,118,.3)}
 .progression-note{font-size:9px;color:var(--text-muted);margin-top:8px;line-height:1.6}
 
+/* ---------- 实时曲线（ADSR / EQ） ---------- */
+.curve-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.curve-box{
+ background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.16));
+ border:1px solid rgba(255,255,255,.05);border-radius:11px;padding:10px 12px 8px;
+}
+.curve-title{
+ font-size:10.5px;color:var(--accent-sec);letter-spacing:1px;font-weight:800;
+ display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;
+}
+.curve-title span{color:var(--text-muted);font-weight:600;letter-spacing:0;font-family:ui-monospace,Consolas,monospace;font-size:10px}
+.curve-box canvas{width:100%;height:130px;display:block;border-radius:8px;background:rgba(0,0,0,.32)}
+
+/* ---------- Piano Roll 实时编曲视图 ---------- */
+.roll-canvas{
+ width:100%;height:288px;display:block;border-radius:12px;margin-top:10px;
+ background:linear-gradient(180deg,#0a0e14,#080b10);border:1px solid rgba(255,255,255,.06);
+}
+.roll-toggle{
+ display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+ border:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.25);
+ font-size:11px;font-weight:800;cursor:pointer;transition:.15s;color:var(--text-main);
+}
+.roll-toggle:hover{border-color:var(--accent)}
+.roll-toggle.off{opacity:.35;filter:grayscale(.9);text-decoration:line-through}
+.roll-note{font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.7}
+
+/* ---------- Solo / Mute ---------- */
+.sm-group{display:flex;gap:4px;flex:0 0 auto}
+.sm-btn{
+ width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.12);
+ background:linear-gradient(180deg,#242c3a,#1a212c);color:var(--text-muted);
+ font-size:11px;font-weight:900;cursor:pointer;transition:.14s;padding:0;line-height:1;
+ display:inline-flex;align-items:center;justify-content:center;
+}
+.sm-btn:hover{color:#fff;border-color:var(--accent-sec)}
+.sm-btn.mute.on{background:var(--drums);border-color:var(--drums);color:#1a0006;box-shadow:0 0 12px rgba(255,77,109,.4)}
+.sm-btn.solo.on{background:#ffd166;border-color:#ffd166;color:#241a00;box-shadow:0 0 12px rgba(255,209,102,.45)}
+.step-sm{display:flex;gap:3px;margin-top:3px}
+.step-sm .sm-btn{width:100%;height:18px;font-size:9px;border-radius:5px}
+
+/* ---------- 自定义和弦进行 ---------- */
+.custom-prog-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}
+.custom-prog-row input{
+ background:rgba(0,0,0,.42);color:var(--text-main);border:1px solid rgba(255,255,255,.09);
+ padding:6px 10px;border-radius:8px;outline:none;font-size:11px;width:190px;font-family:ui-monospace,Consolas,monospace;
+}
+.custom-prog-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,230,118,.13)}
+.prog-del{margin-left:5px;opacity:.6;font-weight:900}
+.prog-del:hover{opacity:1;color:var(--drums)}
+
 /* ---------- 响应式 ---------- */
 @media(max-width:1000px){
  .layout-top{grid-template-columns:1fr}
  .drum-legend{grid-template-columns:repeat(4,1fr)}
  .step-grid{grid-template-columns:104px repeat(16,58px);overflow-x:auto;padding-bottom:6px}
  .synth-container{padding:18px}
+ .curve-panel{grid-template-columns:1fr}
 }
 @media(max-width:650px){
  body{padding:7px}
@@ -525,10 +578,10 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 
           <h4>② 最简单的 DAW 用法</h4>
           <p>先确认右侧显示“使用 DAW 多轨”，然后点击 <strong>▶ 播放</strong>。BPM 可以实时调整；“循环”打开后会不断循环。四条轨道的 Vol 可以单独控制。</p>
-          <p>例如轨1输入：<code>1 2 3 5 | 6 5 3 2</code>；轨3输入：<code>1 1 5 5 | 6 6 3 3</code>；轨4输入：<code>K - CH - | S - CH -</code>，就可以得到一个简单的旋律 + 贝斯 + 鼓组。</p>
+          <p>默认自带一段示范曲：轨2 是 <code>1 - - - | 5 - - - | 6 - - - | 4 - - -</code>（C–G–Am–F），轨3 走根音—五音 <code>1 - 5 - | 5 - 2 - | 6 - 3 - | 4 - 1 -</code>，轨4 是 <code>K S K S</code>（底鼓 1/3 + 军鼓 2/4），轨1 是旋律。改乱了点 <strong>🎵 示范曲</strong> 就能恢复。也可以自己写：<code>1 2 3 5 | 6 5 3 2</code>（轨1）+ <code>1 1 5 5 | 6 6 3 3</code>（轨3）+ <code>K S K S | K S CH S</code>（轨4）。</p>
 
           <h4>③ 简谱里的常用写法</h4>
-          <p><code>1 2 3</code> = 连续四分音符；<code>[1 2]</code> = 两个八分音符；<code>{1 2 3}</code> = 三连音；<code>1'</code> = 高八度；<code>1,</code> = 低八度；<code>-</code> = 延长/空拍；<code>|</code> = 小节分隔。</p>
+          <p><code>1 2 3</code> = 连续四分音符；<code>[1 2]</code> = 两个八分音符；<code>[[1 2 3 4]]</code> = 四个十六分音符；<code>{1 2 3}</code> = 三连音；<code>1.</code> = 附点（时值 ×1.5）；<code>1'</code> = 高八度；<code>1,</code> = 低八度；<code>-</code> = 延长/空拍；<code>|</code> = 小节分隔。<strong>轨2和弦</strong>还可以在控制条里选择“琶音”，写 <code>1 - 5 -</code> 就会自动展开成琶音。</p>
 
           <h4>④ 播放中也可以直接改谱</h4>
           <p>工作站支持<strong>播放中实时修改音符</strong>。直接修改轨1～轨4输入框，尚未播放的后续内容会采用最新设置，不需要先停止。</p>
@@ -542,7 +595,9 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
           <p>例如 C 大调的 V 级是 G：选择 <strong>7</strong> 就会得到 G-B-D-F；选择 <strong>9</strong> 会加入 A。选择 <strong>Maj7 / Maj9 / m7 / m9 / dim7</strong> 等时，实际播放的音程也会随选择改变。</p>
 
           <h4>⑦ 琶音怎么用</h4>
-          <p>在和弦区的“和弦播放方式”选择：<strong>柱式、琶音·上行、琶音·下行、琶音·随机</strong>。然后按住任意和弦卡片即可试听；松开后停止。琶音速度可以选择十六分、八分或四分音符。</p>
+          <p>和弦区的“和弦播放方式”可选：<strong>柱式、琶音·上行、琶音·下行、琶音·上下往返、琶音·随机</strong>。按住任意和弦卡片即可试听，松开后停止。</p>
+          <p>快慢有两级控制：<strong>琶音速度</strong>决定每个音的时值（64分 / 32分 / 16分 / 8分 / 4分），<strong>快慢</strong>滑杆在这个时值上整体加速或减速（0.25× 更慢 ～ 4× 更快）。</p>
+          <p>DAW 轨2（和弦）也可以单独设置琶音：在“DAW 多轨音序器”的控制条里选择 <strong>轨2和弦</strong> 的发声方式与琶音时值，写入 <code>1 - 5 - | 6 - 3 -</code> 这样的和弦级数后播放，就会自动展开成琶音。</p>
 
           <h4>⑧ 自定义和弦</h4>
           <p>选择某张和弦卡片的 <strong>自定义</strong>，输入和弦名称和音程。音程使用“相对于根音的半音数”，例如：</p>
@@ -558,7 +613,12 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
           <h4>⑪ 节拍器</h4>
           <p>打开“独立节拍器”，选择拍号，例如 4/4、3/4、6/8。节拍器 BPM 与工作站 BPM 同步，适合课堂上讲节拍、速度和切分。</p>
 
-          <div class="tutorial-tip"><strong>🎓 推荐课堂流程：</strong>先用键盘让学生试听 Saw / Square / Triangle / Sine → 再调 Attack / Decay / Sustain / Release → 用轨1写旋律 → 加轨2和弦 → 加轨3贝斯 → 加轨4鼓组 → 最后用 Chorus / Delay / Reverb 做空间处理。这样可以把“合成器原理 → 音色 → 和声 → 节奏 → 编曲 → 混音”连成一条完整的学习路径。</div>
+          <h4>⑫ Solo / Mute</h4>
+          <p>DAW 与 Step 里每条轨道都有 <strong>S（Solo）</strong> 和 <strong>M（Mute）</strong> 两个小按钮：<strong>Solo</strong> = 只播放这一轨，其他轨道静音；<strong>Mute</strong> = 静音这一轨，其他轨道不变。可以同时 Solo 多条轨道；只要有任意一条处于 Solo，其余轨道就都不发声。导出 WAV 时也会沿用这个设置。</p>
+
+          <h4>⑬ 实时编曲视图 / 音色曲线</h4>
+          <p>DAW 下方是<strong>实时编曲视图</strong>：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨；播放时绿色竖线会跟着走，正在发声的音变白高亮。右上角的四个轨道名可以单独隐藏某一轨的图形。</p>
+          <p>通道条下方会实时画出当前轨道的 <strong>ADSR 包络</strong>与 <strong>EQ / 滤波频响曲线</strong>，拖动 Attack / Decay / Sustain / Release / Low / High / Cutoff 时曲线会同步变化。</p>
         </div>
       </div>
 
@@ -574,7 +634,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
     </div>
     <div class="status-pill" style="margin:8px 0 10px">每格 = 一个起音位置；每格可独立选择音高和时值。四条轨道可以同时发声。</div>
     <div id="stepGrid" class="step-grid"></div>
-    <div class="step-help">四条轨道用法一致：先选这一拍的<strong>细分</strong>（一拍 / 八分 / 三连 / 十六分），再逐个设置子拍。轨1/轨3用下拉选音符，轨2选择和弦级数，轨4点击芯片循环切换鼓声（空 → K 底鼓 → S 军鼓 → H 闭镲 → O 开镲 → C 拍手 → T 通鼓 → R 吊镲）。例如轨4选“4个·十六分”，就能在一拍里排出十六分音符的鼓花。</div>
+    <div class="step-help">四条轨道用法一致：先选这一拍的<strong>细分</strong>（一拍 / 八分 / 三连 / 十六分），再逐个设置子拍。轨1/轨3用下拉选音符，轨2选择和弦级数，轨4点击芯片循环切换鼓声（空 → K 底鼓 → S 军鼓 → H 闭镲 → O 开镲 → C 拍手 → T 通鼓 → R 吊镲）。例如轨4选“4个·十六分”，就能在一拍里排出十六分音符的鼓花。<br>轨道名下方的 <strong>复制 G1</strong> 按钮会把第 1 组（前 4 拍）的<strong>内容原样</strong>复制到 G2–G4：鼓组会连 K/S/H/O/C/T/R 的具体鼓声和空拍一起复制（例如 G1 是 <code>K S K S</code>，复制后 G2–G4 同样是 <code>K S K S</code>），轨1/轨2/轨3 会连同音高与和弦级数一起复制。改完 G1 再点一次即可重新同步后面三组。</div>
 
     <div class="progression-panel">
       <div class="progression-title">🎼 Step 常用和弦进行 <span>点击后直接填入轨2的 16 步</span></div>
@@ -588,6 +648,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
         <button class="progression-btn step-progression" data-prog="pachelbel">I–V–vi–iii–IV–I–IV–V</button>
         <button class="progression-btn step-progression" data-prog="reset">清空轨2</button>
       </div>
+      <div class="custom-prog-row"><button id="btnStepProgPlayOnce" class="btn small primary">▶ Step 播放一遍</button><span class="status-pill">把当前进行填入轨2后完整播放一次</span></div>
       <div class="progression-note">默认每个和弦占 4 步；三和弦进行会自动延长最后一个和弦，八和弦进行会按 16 步循环压缩。和弦具体音色/七和弦/九和弦类型沿用下方“智能和弦系统”的当前选择。</div>
     </div>
   </div>
@@ -596,11 +657,11 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
     <div class="module">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3 class="module-title">DAW 多轨音序器 <span class="help-btn" onclick="showHelp('DAW')">❓</span></h3><button id="btnUseDaw" class="btn mode-btn selected">使用 DAW 多轨</button></div>
       <div class="track-legend"><span class="legend-chip"><i class="legend-dot melody"></i>蓝色 = 轨1 旋律</span><span class="legend-chip"><i class="legend-dot chord"></i>紫色 = 轨2 和弦</span><span class="legend-chip"><i class="legend-dot bass"></i>橙色 = 轨3 贝斯</span><span class="legend-chip"><i class="legend-dot drums"></i>红色 = 轨4 鼓组</span></div>
-      <div class="daw-controls"><button id="btnPlay" class="btn primary">▶ 播放</button><button id="btnStop" class="btn">⏹ 停止</button><span style="font-size:12px">BPM</span><input type="range" id="bpmSlider" min="60" max="240" value="120" style="width:80px"><span id="bpmVal" class="val-box">120</span><label class="status-pill"><input type="checkbox" id="loopToggle" checked> 循环</label><select id="loopBars" class="styled-sel"><option value="auto">自动循环</option><option value="1">1 小节</option><option value="2">2 小节</option><option value="4" selected>4 小节</option><option value="8">8 小节</option></select><button id="btnScoreImport" class="btn primary">📄 读谱导入</button><button id="btnMultiWrite" class="btn primary" style="margin-left:auto">📝 手机触控写谱 / 全局展开</button></div>
-      <div class="track-lane melody"><span class="track-label">轨1（旋律）</span><span id="oct_melody" class="oct-badge">+0 8va</span><input type="text" id="melodyInput" class="track-input" value="[1 2] 3 [4 5] | 6 - 5 - | {4 4 4} 3 2 | 1 - - -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_melody" min="0" max="1" step="0.05" value="1"></div></div>
-      <div class="track-lane chord"><span class="track-label">轨2（和弦）</span><span id="oct_chord" class="oct-badge">+0 8va</span><input type="text" id="chordInput" class="track-input" value="1 - 5 - | 6 - 3 - | 4 - 1 - | 5 - 1 -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_chord" min="0" max="1" step="0.05" value="0.7"></div></div>
-      <div class="track-lane bass"><span class="track-label">轨3（贝斯）</span><span id="oct_bass" class="oct-badge">+0 8va</span><input type="text" id="bassInput" class="track-input" value="1 1 5 5 | 6 6 3 3 | 4 4 1 1 | 5 5 1 1"><div class="vol-box"><span>Vol</span><input type="range" id="vol_bass" min="0" max="1" step="0.05" value="0.9"></div></div>
-      <div class="track-lane drums"><span class="track-label">轨4（鼓组）</span><span class="oct-badge">DRUM</span><input type="text" id="drumsInput" class="track-input" value="K - CH - | S - CH - | K - OH - | S - CH -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_drums" min="0" max="1" step="0.05" value="0.9"></div><div style="flex-basis:100%"></div><div class="drum-legend"><button class="drum-pad" data-drum="kick"><b>Q</b>Kick<div class="drum-note">底鼓</div></button><button class="drum-pad" data-drum="snare"><b>W</b>Snare<div class="drum-note">军鼓</div></button><button class="drum-pad" data-drum="closedHat"><b>E</b>Closed Hat<div class="drum-note">闭镲</div></button><button class="drum-pad" data-drum="openHat"><b>R</b>Open Hat<div class="drum-note">开镲</div></button><button class="drum-pad" data-drum="clap"><b>T</b>Clap<div class="drum-note">拍手</div></button><button class="drum-pad" data-drum="tom"><b>Y</b>Tom<div class="drum-note">通鼓</div></button><button class="drum-pad" data-drum="crash"><b>U</b>Crash<div class="drum-note">吊镲</div></button></div></div>
+      <div class="daw-controls"><button id="btnPlay" class="btn primary">▶ 播放</button><button id="btnStop" class="btn">⏹ 停止</button><span style="font-size:12px">BPM</span><input type="range" id="bpmSlider" min="60" max="240" value="120" style="width:80px"><span id="bpmVal" class="val-box">120</span><label class="status-pill"><input type="checkbox" id="loopToggle" checked> 循环</label><select id="loopBars" class="styled-sel"><option value="auto">自动循环</option><option value="1">1 小节</option><option value="2">2 小节</option><option value="4" selected>4 小节</option><option value="8">8 小节</option></select><span style="font-size:12px;color:var(--text-muted)">轨2和弦</span><select id="dawChordArp" class="styled-sel" title="DAW 轨2（和弦）的发声方式：柱式 = 同时发声；琶音 = 在该和弦的时值内依次弹出"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><select id="dawChordArpRate" class="styled-sel" title="琶音每个音的时值"><option value="0.125">32分</option><option value="0.25" selected>16分</option><option value="0.5">8分</option><option value="1">4分</option></select><button id="btnDemoSong" class="btn" title="把四条轨道恢复成自带的示范曲（C 大调 I–V–vi–IV）">🎵 示范曲</button><button id="btnScoreImport" class="btn primary">📄 读谱导入</button><button id="btnMultiWrite" class="btn primary" style="margin-left:auto">📝 手机触控写谱 / 全局展开</button></div>
+      <div class="track-lane melody"><span class="track-label">轨1（旋律）</span><span id="oct_melody" class="oct-badge">+0 8va</span><input type="text" id="melodyInput" class="track-input" value="5 - [3 5] 6 | 5 - 7, 2 | 1 - [3 1] 2 | 1 - - -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_melody" min="0" max="1" step="0.05" value="1"></div></div>
+      <div class="track-lane chord"><span class="track-label">轨2（和弦）</span><span id="oct_chord" class="oct-badge">+0 8va</span><input type="text" id="chordInput" class="track-input" value="1 - - - | 5 - - - | 6 - - - | 4 - - -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_chord" min="0" max="1" step="0.05" value="0.7"></div></div>
+      <div class="track-lane bass"><span class="track-label">轨3（贝斯）</span><span id="oct_bass" class="oct-badge">+0 8va</span><input type="text" id="bassInput" class="track-input" value="1 - 5 - | 5 - 2 - | 6 - 3 - | 4 - 1 -"><div class="vol-box"><span>Vol</span><input type="range" id="vol_bass" min="0" max="1" step="0.05" value="0.9"></div></div>
+      <div class="track-lane drums"><span class="track-label">轨4（鼓组）</span><span class="oct-badge">DRUM</span><input type="text" id="drumsInput" class="track-input" value="K S K S | K S CH S | K S K S | K S K T"><div class="vol-box"><span>Vol</span><input type="range" id="vol_drums" min="0" max="1" step="0.05" value="0.9"></div><div style="flex-basis:100%"></div><div class="drum-legend"><button class="drum-pad" data-drum="kick"><b>Q</b>Kick<div class="drum-note">底鼓</div></button><button class="drum-pad" data-drum="snare"><b>W</b>Snare<div class="drum-note">军鼓</div></button><button class="drum-pad" data-drum="closedHat"><b>E</b>Closed Hat<div class="drum-note">闭镲</div></button><button class="drum-pad" data-drum="openHat"><b>R</b>Open Hat<div class="drum-note">开镲</div></button><button class="drum-pad" data-drum="clap"><b>T</b>Clap<div class="drum-note">拍手</div></button><button class="drum-pad" data-drum="tom"><b>Y</b>Tom<div class="drum-note">通鼓</div></button><button class="drum-pad" data-drum="crash"><b>U</b>Crash<div class="drum-note">吊镲</div></button></div></div>
     </div>
 
     <div class="module">
@@ -612,16 +673,36 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
         <div class="param-group"><h4>ADVANCED (合成/吉他)</h4><div class="row"><span>八度</span><input type="range" id="p_octave" min="-2" max="2" step="1"><span id="v_octave" class="val-box"></span></div><div class="row"><span>叠加</span><input type="range" id="p_unison" min="0" max="1" step=".25"><span id="v_unison" class="val-box"></span></div><div class="row"><span>Sub低八</span><input type="range" id="p_sub" min="0" max="1" step=".05"><span id="v_sub" class="val-box"></span></div><div class="row"><span>滑音</span><input type="range" id="p_glide" min="0" max=".5" step=".01"><span id="v_glide" class="val-box"></span></div><div class="row"><span>滤波包络</span><input type="range" id="p_filterEnv" min="-1" max="1" step=".05"><span id="v_filterEnv" class="val-box"></span></div><div class="row"><span>Tone</span><input type="range" id="p_driveTone" min="0" max="1" step=".05"><span id="v_driveTone" class="val-box"></span></div><div class="row"><span>压缩</span><input type="range" id="p_compress" min="0" max="1" step=".05"><span id="v_compress" class="val-box"></span></div><div class="row"><span>音量颤音</span><input type="range" id="p_tremolo" min="0" max="1" step=".05"><span id="v_tremolo" class="val-box"></span></div><div class="row"><span>颤音速率</span><input type="range" id="p_tremoloRate" min=".5" max="14" step=".5"><span id="v_tremoloRate" class="val-box"></span></div></div>
         <div class="param-group"><h4>SPATIAL (空间)</h4><div class="row"><span>DlyTime</span><input type="range" id="p_delayTime" min=".05" max="1" step=".05"><span id="v_delayTime" class="val-box"></span></div><div class="row"><span>DlyMix</span><input type="range" id="p_delayMix" min="0" max="1" step=".05"><span id="v_delayMix" class="val-box"></span></div><div class="row"><span>RevMix</span><input type="range" id="p_reverbMix" min="0" max="1" step=".05"><span id="v_reverbMix" class="val-box"></span></div><div class="row"><span>Pan</span><input type="range" id="p_pan" min="-1" max="1" step=".05"><span id="v_pan" class="val-box"></span></div></div>
       </div>
+
+      <div class="curve-panel">
+        <div class="curve-box">
+          <div class="curve-title">ADSR 包络 <span id="curveAdsrInfo"></span></div>
+          <canvas id="adsrCanvas"></canvas>
+        </div>
+        <div class="curve-box">
+          <div class="curve-title">EQ / 滤波频响 <span id="curveEqInfo"></span></div>
+          <canvas id="eqCanvas"></canvas>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div class="module">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 class="module-title" style="margin:0">🎼 实时编曲视图 (Piano Roll) <span class="help-btn" onclick="showHelp('ROLL')">❓</span></h3>
+      <div class="toolbar" id="rollToggles"></div>
+    </div>
+    <canvas id="rollCanvas" class="roll-canvas"></canvas>
+    <div class="roll-note">横轴 = 时间（小节 / 拍），纵轴 = 音高；底部是鼓组轨（K 底鼓 · S 军鼓 · H 闭镲 · O 开镲 · C 拍手 · T 通鼓 · R 吊镲）。播放时绿色竖线是实时播放头，正在发声的音会高亮。点击右上角的轨道名可以单独隐藏 / 显示该轨。</div>
   </div>
 
   <div class="module"><div class="metronome-panel"><strong style="color:var(--accent)">🎵 独立节拍器</strong><label class="status-pill"><input type="checkbox" id="metronomeToggle"> 开启</label><span style="font-size:11px">拍号</span><select id="timeNum" class="styled-sel"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>12</option></select><span style="font-size:18px;font-weight:900">/</span><select id="timeDen" class="styled-sel"><option>2</option><option selected>4</option><option>8</option><option>16</option></select><button id="btnMetroTest" class="btn small">试听一拍</button><span id="metroSignatureText" class="status-pill">4/4</span><span id="beatLight" class="beat-light"></span><span class="small-note">BPM 与全局音序器统一。</span></div></div>
 
-  <div class="module"><div class="chord-top"><h3 class="module-title" style="margin:0">智能和弦系统 + 琶音器 <span class="help-btn" onclick="showHelp('CHORD')">❓</span></h3><div class="toolbar"><label style="font-size:12px;cursor:pointer"><input type="checkbox" id="toggleVoiceLeading" checked> 平滑就近连接</label><select id="keySelect" class="styled-sel"><option value="0">C 大调</option><option value="1">Db 大调</option><option value="2">D 大调</option><option value="3">Eb 大调</option><option value="4">E 大调</option><option value="5">F 大调</option><option value="6">Gb 大调</option><option value="7">G 大调</option><option value="8">Ab 大调</option><option value="9">A 大调</option><option value="10">Bb 大调</option><option value="11">B 大调</option></select></div></div><div class="chord-arp-controls"><span style="font-size:11px;color:var(--text-muted)">和弦播放方式</span><select id="chordPlayStyle" class="styled-sel"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="random">琶音 · 随机</option></select><span style="font-size:11px;color:var(--text-muted)">琶音速度</span><select id="arpRate" class="styled-sel"><option value="0.125">16分音符</option><option value="0.25" selected>8分音符</option><option value="0.5">4分音符</option></select><button id="btnCustomChord" class="btn small">🎛 自定义和弦</button><span class="small-note">按住和弦卡片听连续琶音；松开停止。</span></div><div class="chords-grid" id="chordsGrid"></div>
+  <div class="module"><div class="chord-top"><h3 class="module-title" style="margin:0">智能和弦系统 + 琶音器 <span class="help-btn" onclick="showHelp('CHORD')">❓</span></h3><div class="toolbar"><label style="font-size:12px;cursor:pointer"><input type="checkbox" id="toggleVoiceLeading" checked> 平滑就近连接</label><select id="keySelect" class="styled-sel"><option value="0">C 大调</option><option value="1">Db 大调</option><option value="2">D 大调</option><option value="3">Eb 大调</option><option value="4">E 大调</option><option value="5">F 大调</option><option value="6">Gb 大调</option><option value="7">G 大调</option><option value="8">Ab 大调</option><option value="9">A 大调</option><option value="10">Bb 大调</option><option value="11">B 大调</option></select></div></div><div class="chord-arp-controls"><span style="font-size:11px;color:var(--text-muted)">和弦播放方式</span><select id="chordPlayStyle" class="styled-sel"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><span style="font-size:11px;color:var(--text-muted)">琶音速度</span><select id="arpRate" class="styled-sel"><option value="0.0625">64分音符</option><option value="0.125">32分音符</option><option value="0.25" selected>16分音符</option><option value="0.5">8分音符</option><option value="1">4分音符</option></select><span style="font-size:11px;color:var(--text-muted)">快慢</span><input type="range" id="arpSpeed" min="0.25" max="4" step="0.05" value="1" style="width:96px" title="琶音快慢倍率：向左拖 = 更慢，向右拖 = 更快（0.25× ~ 4×）"><span id="arpSpeedVal" class="val-box">1.00×</span><button id="btnCustomChord" class="btn small">🎛 自定义和弦</button><span class="small-note">按住和弦卡片听连续琶音；松开停止。「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。</span></div><div class="chords-grid" id="chordsGrid"></div>
 
     <div class="progression-panel">
       <div class="progression-title">🎹 常用和弦进行 <span>点击后写入 DAW 轨2，并可立即播放试听</span></div>
-      <div class="progression-buttons">
+      <div class="progression-buttons" id="chordProgButtons">
         <button class="progression-btn chord-progression" data-prog="pop">I–V–vi–IV · 流行</button>
         <button class="progression-btn chord-progression" data-prog="axis">vi–IV–I–V · 抒情</button>
         <button class="progression-btn chord-progression" data-prog="50s">I–vi–IV–V · 经典</button>
@@ -631,7 +712,14 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
         <button class="progression-btn chord-progression" data-prog="pachelbel">I–V–vi–iii–IV–I–IV–V</button>
         <button class="progression-btn chord-progression" data-prog="reset">清空轨2</button>
       </div>
-      <div class="progression-note">当前 Key 会自动决定实际和弦名称；例如在 C 大调中 I–V–vi–IV = C–G–Am–F。当前和弦卡片所选的类型（Maj7、m7、9、自定义等）会用于轨2播放。</div>
+      <div class="custom-prog-row">
+        <span style="font-size:11px;color:var(--text-muted)">自定义进行</span>
+        <input id="customProgInput" type="text" placeholder="如 1 5 6 4 或 I-V-vi-IV" maxlength="40">
+        <button id="btnCustomProgSave" class="btn small">💾 保存</button>
+        <button id="btnProgPlayOnce" class="btn small primary">▶ 播放一遍</button>
+        <span id="customProgStatus" class="status-pill">未选择</span>
+      </div>
+      <div class="progression-note">当前 Key 会自动决定实际和弦名称；例如在 C 大调中 I–V–vi–IV = C–G–Am–F。当前和弦卡片所选的类型（Maj7、m7、9、自定义等）会用于轨2播放。<strong>自定义进行</strong>支持 1～7 数字或 I/ii/iii/IV/V/vi/vii° 级数，用空格、逗号或短横线分隔，保存后会作为一个按钮出现（点按钮应用，点 ✕ 删除）。<strong>▶ 播放一遍</strong>会把当前选中的进行写入轨2并完整播放一次（自动临时关闭循环）。</div>
     </div>
   </div>
 
@@ -644,7 +732,9 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 <div id="scoreModal" class="modal-overlay" style="display:none">
   <div class="modal-content" style="max-width:780px">
     <h3 style="color:var(--accent);margin:0">📄 读谱 · 简谱导入</h3>
-    <div class="custom-chord-help">支持三种输入：<b>① 上传简谱图片</b>（自动 OCR 识别数字，首次使用需联网加载识别引擎）；<b>② 上传 .txt 文本</b>；<b>③ 直接粘贴文本</b>。识别后会自动清洗成 DAW 语法（去掉歌词、数字间补空格、识别调号与速度），可在这里手动修正后再写入轨道。<br>注意：图片识别只能读出<b>音符数字</b>，八分音符的下划线、高低音点这类信息识别不出来，需要在下方补 <code>[1 2]</code>、<code>1'</code>、<code>1,</code>。</div>
+    <div class="custom-chord-help">支持三种输入：<b>① 上传简谱图片</b>（自动 OCR 识别，首次使用需联网加载识别引擎）；<b>② 上传 .txt 文本</b>；<b>③ 直接粘贴文本</b>。识别后会清洗成 DAW 语法（去掉歌词、数字间补空格、识别调号与速度），可在这里手动修正后再写入轨道。<br>
+      <b>节奏识别规则：</b>减时线（八分/十六分）支持三种写法 —— 数字后跟 <code>1_</code> / <code>1_2_</code>、数字后跟两个下划线 <code>1__</code>、音符行下面另起一行 <code>_ _ _</code>（叠两行即十六分）；附点写作 <code>1.</code>；增时线 <code>1 -</code> 与小节线 <code>|</code> 照常保留。识别结果会转成 <code>[1 2]</code>（八分）、<code>[[1 2 3 4]]</code>（十六分）、<code>1.</code>（附点）。<br>
+      注意：图片识别能否读出减时线取决于图片清晰度；识别不到时整行会按四分音符处理，可在下方手动补括号。高低音点OCR 也拿不到，需要自行补 <code>1'</code>、<code>1,</code>。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <label class="btn small" style="cursor:pointer">🖼 上传图片<input type="file" id="scoreImage" accept="image/*" style="display:none"></label>
       <label class="btn small" style="cursor:pointer">📄 上传文本<input type="file" id="scoreText" accept=".txt,.md,.text,text/plain" style="display:none"></label>
@@ -1317,6 +1407,7 @@ function progressionToDawText(degrees){
 
 function setStepChordProgression(key){
   const cells=stepState.chord;
+  lastStepProgKey=key;
   cells.forEach((v,i)=>{cells[i]={subdiv:1,events:[{pitchOffset:null}]}});
   if(key==='reset'){
     buildStepGrid();
@@ -1353,7 +1444,10 @@ function applyChordProgressionToDaw(key,playNow=true){
     const degrees=COMMON_PROGRESSIONS[key];
     if(!degrees)return;
     input.value=progressionToDawText(degrees);
+    const st=document.getElementById('customProgStatus');
+    if(st)st.textContent='当前：'+progressionDegreeText(degrees);
   }
+  lastChordProgKey=key;
   lastChordNotes=[];
   markProgressionButton('.chord-progression',key);
   requestLiveSequenceRefresh();
@@ -1517,31 +1611,63 @@ function clearCustomChord(){
 
 let arpTimer=null,arpNotes=[],arpIndex=0;
 
+function getArpSpeedFactor(){
+  const el=document.getElementById('arpSpeed');
+  const v=Number(el?el.value:1);
+  return Math.max(.1,isFinite(v)&&v>0?v:1);
+}
+function syncArpSpeedLabel(){
+  const el=document.getElementById('arpSpeed');
+  const out=document.getElementById('arpSpeedVal');
+  if(el&&window.paintRange)paintRange(el);
+  if(out)out.textContent=getArpSpeedFactor().toFixed(2)+'×';
+}
+function arpStepBeats(){
+  // 一个琶音音符占多少拍（四分音符 = 1 拍），快慢倍率越大 → 拍数越小 → 越快
+  const rate=Number(document.getElementById('arpRate').value)||.25;
+  return rate/getArpSpeedFactor();
+}
+function updateArpTimer(){
+  // 琶音进行中改动速度 / BPM 时，立即按新速度重启（不打断当前和弦）
+  if(!arpTimer)return;
+  if(!arpNotes.length)return;
+  clearInterval(arpTimer);arpTimer=null;
+  const step=arpStepBeats();
+  const tick=()=>arpTick(step);
+  arpTimer=setInterval(tick,Math.max(20,step*60/getBpm()*1000));
+}
 function startChordPerformance(notes){
  stopChordPerformance();
  const style=document.getElementById('chordPlayStyle').value;
  arpNotes=notes.slice();
- if(style==='up')arpNotes.sort((a,b)=>a-b);
+ if(style==='up'||style==='updown')arpNotes.sort((a,b)=>a-b);
  if(style==='down')arpNotes.sort((a,b)=>b-a);
  if(style==='random')shuffle(arpNotes);
+ // 上下往返：上行一遍 + 去掉两端重复音的下行
+ if(style==='updown'&&arpNotes.length>2){
+   const asc=arpNotes.slice();
+   arpNotes=asc.concat(asc.slice(1,-1).reverse());
+ }
  arpIndex=0;
- const rate=Number(document.getElementById('arpRate').value)||.25;
+ const step=arpStepBeats();
  if(style==='block'){
   activeChordVoiceIds=arpNotes.map(n=>playHeldNote(n,'chord')).filter(Boolean);
   return;
  }
- const tick=()=>{
-  if(!arpNotes.length)return;
-  const n=arpNotes[arpIndex%arpNotes.length];
-  const id=playNote(n,'chord',Math.max(.08,rate*.82));
-  if(id)activeChordVoiceIds.push(id);
-  // 防止琶音播放时 activeChordVoiceIds 无限累积：只保留仍存在的 voice
-  activeChordVoiceIds=activeChordVoiceIds.filter(id=>liveVoices.has(id));
-  arpIndex++;
-  if(style==='random'&&arpIndex%arpNotes.length===0)shuffle(arpNotes);
- };
+ const tick=()=>arpTick(step);
  tick();
- arpTimer=setInterval(tick,rate*60/Number(document.getElementById('bpmSlider').value)*1000);
+ arpTimer=setInterval(tick,Math.max(20,step*60/getBpm()*1000));
+}
+function arpTick(step){
+ if(!arpNotes.length)return;
+ const style=document.getElementById('chordPlayStyle').value;
+ const n=arpNotes[arpIndex%arpNotes.length];
+ const id=playNote(n,'chord',Math.max(.05,Math.min(step,arpStepBeats())*.82));
+ if(id)activeChordVoiceIds.push(id);
+ // 防止琶音播放时 activeChordVoiceIds 无限累积：只保留仍存在的 voice
+ activeChordVoiceIds=activeChordVoiceIds.filter(v=>liveVoices.has(v));
+ arpIndex++;
+ if(style==='random'&&arpIndex%arpNotes.length===0)shuffle(arpNotes);
 }
 
 function stopChordPerformance(){
@@ -1555,14 +1681,61 @@ function stopChordPerformance(){
 }
 
 // ========================= DAW PARSER =========================
+// 轨2和弦的琶音设置（DAW 控制条）
+function getDawChordArpStyle(){
+  const el=document.getElementById('dawChordArp');
+  const v=el?el.value:'';
+  // 控件缺失或值异常时一律按柱式处理，避免意外变成琶音
+  return ['up','down','updown','random'].indexOf(v)>=0?v:'block';
+}
+function getDawChordArpRate(){
+  const el=document.getElementById('dawChordArpRate');
+  const v=Number(el?el.value:.25);
+  return isFinite(v)&&v>0?v:.25;
+}
+// 把一组和弦音按所选琶音方式展开成事件
+function pushChordAsArp(out,trackName,pitches,start,total){
+  if(!pitches||!pitches.length)return;
+  const style=getDawChordArpStyle();
+  if(style==='block'||pitches.length<2){
+    pitches.forEach(p=>out.push({pitch:p,start:start,duration:total,track:trackName}));
+    return;
+  }
+  let order=pitches.slice().sort((a,b)=>a-b);
+  if(style==='down')order.reverse();
+  else if(style==='random')shuffle(order);
+  else if(style==='updown'&&order.length>2)order=order.concat(order.slice(1,-1).reverse());
+  let step=getDawChordArpRate();
+  let count=Math.floor(total/step+1e-6);
+  // 和弦时值装不下一整轮时，压缩步长，保证每个和弦音都听得到
+  if(count<order.length){count=order.length;step=total/order.length;}
+  if(count>128)count=128;
+  for(let k=0;k<count;k++){
+    const left=total-k*step;
+    out.push({pitch:order[k%order.length],start:start+k*step,
+      duration:Math.max(.04,Math.min(step*.92,left>0?left:step)),track:trackName});
+  }
+}
 function parseJianpuTrack(text,rootKey,trackName){
  const notes=[];let beat=0,dur=1,i=0,scale=[0,2,4,5,7,9,11],lastEvents=[],lastNotes=[];
+ const durStack=[];            // 支持 [1 2] 八分、[[1 2 3 4]] 十六分（括号可嵌套）
+ let pendingChord=null;        // 轨2琶音：把和弦连同后面的 - 延音攒成一组再展开
+ const flushChord=()=>{
+   if(!pendingChord)return;
+   const pc=pendingChord;pendingChord=null;
+   pushChordAsArp(notes,trackName,pc.notes,pc.start,pc.dur);
+ };
  text=String(text||'');
- while(i<text.length){const c=text[i];if(c==='[')dur=.5;else if(c===']')dur=1;else if(c==='{')dur=1/3;else if(c==='}')dur=1;
-  else if(c==='-'){beat+=dur;lastNotes.forEach(n=>{n.duration+=dur});}
-  else if(c==='0'){beat+=dur;lastEvents=[];lastNotes=[];}
+ while(i<text.length){const c=text[i];
+  if(c==='['){durStack.push(dur);dur=dur*.5;}
+  else if(c==='{'){durStack.push(dur);dur=dur/3;}
+  else if(c===']'||c==='}'){dur=durStack.length?durStack.pop():1;}
+  else if(c==='-'){beat+=dur;if(pendingChord)pendingChord.dur+=dur;lastNotes.forEach(n=>{n.duration+=dur});}
+  else if(c==='0'){flushChord();beat+=dur;lastEvents=[];lastNotes=[];}
   else if(c>='1'&&c<='7'){
-   let mods='',j=i+1;while(j<text.length&&"'-,".includes(text[j])){mods+=text[j];j++}i=j-1;let add=(trackOctOffsets[trackName]||0)*12;for(const m of mods){if(m==="'")add+=12;else if(m===',')add-=12}const deg=Number(c)-1;
+   let mods='',j=i+1;while(j<text.length&&"'-,".includes(text[j])){mods+=text[j];j++}
+   let dotted=false;if(text[j]==='.'){dotted=true;j++}
+   i=j-1;let add=(trackOctOffsets[trackName]||0)*12;for(const m of mods){if(m==="'")add+=12;else if(m===',')add-=12}const deg=Number(c)-1;
    let nts=[];
    if(trackName==='chord'){
      // 关键修复：和弦结构统一走 getChordStructure()，并补上该级数在当前调中的根音偏移 dict.root
@@ -1574,11 +1747,19 @@ function parseJianpuTrack(text,rootKey,trackName){
      lastEvents=nts.slice();
    }
    else if(trackName==='bass')nts=[36+rootKey+scale[deg]+add];else nts=[60+rootKey+scale[deg]+add];
-   lastNotes=[];
-   nts.forEach(p=>{const n={pitch:p,start:beat,duration:dur,track:trackName};notes.push(n);lastNotes.push(n)});
-   lastEvents=nts;beat+=dur;
+   const d=dotted?dur*1.5:dur;      // 附点 ×1.5
+   if(trackName==='chord'&&getDawChordArpStyle()!=='block'){
+     flushChord();
+     pendingChord={notes:nts.slice(),start:beat,dur:d};
+     lastNotes=[];
+   }else{
+     lastNotes=[];
+     nts.forEach(p=>{const n={pitch:p,start:beat,duration:d,track:trackName};notes.push(n);lastNotes.push(n)});
+   }
+   lastEvents=nts;beat+=d;
   }
   i++}
+ flushChord();
  return notes;
 }
 function parseDrumTrack(text){const tokens=String(text||'').toUpperCase().replace(/\|/g,' ').trim().split(/\s+/).filter(Boolean),notes=[];let beat=0;const map={K:'kick',S:'snare',CH:'closedHat',OH:'openHat',C:'clap',T:'tom',R:'crash'};tokens.forEach(tok=>{if(tok==='-'||tok==='0'){beat+=1;return}if(map[tok])notes.push({drum:map[tok],start:beat,duration:.45,track:'drums'});beat+=1});return notes}
@@ -1602,7 +1783,7 @@ let sequenceEvents=[],sequenceLength=16,seqStartAudio=0,schedulerTimer=null,uiFr
 const LOOKAHEAD=.06,SCHEDULE_MS=25;
 function getBpm(){return Math.max(40,Number(document.getElementById('bpmSlider').value)||120)}
 function beatToSeconds(b){return b*60/getBpm()}
-function scheduleSequenceEvent(ev,absBeat){const when=seqStartAudio+beatToSeconds(absBeat);if(ev.drum)triggerDrumAt(ev.drum,when,'drums');else playNoteAt(ev.pitch,ev.track,Math.max(.05,ev.duration),when)}
+function scheduleSequenceEvent(ev,absBeat){if(!isTrackAudible(ev.track))return;const when=seqStartAudio+beatToSeconds(absBeat);if(ev.drum)triggerDrumAt(ev.drum,when,'drums');else playNoteAt(ev.pitch,ev.track,Math.max(.05,ev.duration),when)}
 function schedulerTick(){
   if(!seqRunning||!audioCtx)return;
   const now=audioCtx.currentTime;
@@ -1664,6 +1845,7 @@ function startSequence(kind){
   sequenceLength=kind==='step'?stepLoopLength:getDawLength(sequenceEvents);sequenceLength=Math.max(.25,sequenceLength);
   seqRunning=true;seqStartAudio=audioCtx.currentTime+.08;scheduledCycle=0;scheduledEventIndex=0;applyVolumes();
   setTransport(kind==='step'?'STEP 播放中':'DAW 播放中');schedulerTick();runPlayhead();
+  if(typeof refreshRollData==='function')refreshRollData();
 }
 function runPlayhead(){
   cancelAnimationFrame(uiFrame);
@@ -1674,6 +1856,7 @@ function runPlayhead(){
     const local=document.getElementById('loopToggle').checked?beat%sequenceLength:Math.min(beat,sequenceLength-.0001);
     if(playbackMode==='step')markStepPlayhead(local);
     updatePositionReadout(local);
+    if(typeof setRollPlayhead==='function')setRollPlayhead(local);
     uiFrame=requestAnimationFrame(tick);
   };
   tick();
@@ -1686,6 +1869,13 @@ function updatePositionReadout(beat){
 function stopSequence(update=true){
   seqRunning=false;clearTimeout(schedulerTimer);schedulerTimer=null;cancelAnimationFrame(uiFrame);uiFrame=null;scheduledCycle=0;scheduledEventIndex=0;stopChordPerformance();stopAllVoices();
   document.querySelectorAll('.step-cell.current').forEach(c=>c.classList.remove('current'));
+  // 「播放一遍」结束后把循环开关还原成用户原本的设置
+  if(restoreLoopAfterOnce!==null){
+    const l=document.getElementById('loopToggle');
+    if(l)l.checked=restoreLoopAfterOnce;
+    restoreLoopAfterOnce=null;
+  }
+  if(typeof setRollPlayhead==='function')setRollPlayhead(-1);
   if(update)setTransport('待机 · '+playbackMode.toUpperCase());
 }
 function setTransport(t){const e=document.getElementById('transportStatus');if(e)e.textContent=t}
@@ -1791,8 +1981,13 @@ function buildStepGrid(){
  tracks.forEach(([track,label])=>{
   const lab=document.createElement('div');lab.className='step-label';lab.style.setProperty('--track-color',`var(--${track})`);
   const text=document.createElement('span');text.className='step-label-text';text.textContent=label;
-  const copy=document.createElement('button');copy.type='button';copy.className='step-rhythm-copy';copy.dataset.track=track;copy.textContent='复制 G1 节奏';copy.title='把第 1 组（前 4 拍）的节奏型复制到 G2–G4，只复制节奏与细分，不复制音符/和弦/鼓声选择';
-  copy.addEventListener('click',e=>{e.stopPropagation();track==='drums'?copyDrumRhythmPattern():copyRhythmPattern(track)});
+  const copy=document.createElement('button');copy.type='button';copy.className='step-rhythm-copy';copy.dataset.track=track;
+  const isDrum=(track==='drums');
+  copy.textContent=isDrum?'复制 G1 鼓点':'复制 G1';
+  copy.title=isDrum
+    ? '把第 1 组（前 4 拍）的鼓点原样复制到 G2–G4：细分、子拍数量、每个子拍具体是 K/S/H/O/C/T/R 还是空，完全一致'
+    : '把第 1 组（前 4 拍）的内容完整复制到 G2–G4：细分与音高/和弦级数一起复制';
+  copy.addEventListener('click',e=>{e.stopPropagation();isDrum?copyDrumRhythmPattern():copyStepContent(track)});
   // 每条轨道一个音量推子（与 DAW 的 Vol 是同一个通道推子，双向同步）
   const volRow=document.createElement('div');volRow.className='step-vol-row';
   const volIcon=document.createElement('span');volIcon.className='step-vol-icon';volIcon.textContent='🔊';
@@ -1803,7 +1998,7 @@ function buildStepGrid(){
   vol.title='该轨音量（与 DAW 里的 Vol 是同一个通道推子，双向同步）';
   vol.addEventListener('input',e=>{const d=document.getElementById('vol_'+track);if(d)d.value=e.target.value;applyVolumes();});
   volRow.append(volIcon,vol);
-  lab.append(text,copy,volRow);grid.appendChild(lab);
+  lab.append(text,copy,makeStepSmRow(track),volRow);grid.appendChild(lab);
   if(window.paintRange)paintRange(vol);
   for(let i=0;i<STEP_COUNT;i++){
    const c=document.createElement('div');c.className='step-cell';c.dataset.track=track;c.dataset.step=i;if(i%4===0)c.classList.add('step-group-start');
@@ -1829,32 +2024,16 @@ function buildStepGrid(){
    grid.appendChild(c);
   }
  });
+ if(typeof refreshSoloMuteUI==='function')refreshSoloMuteUI();
+ if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
 }
-// 复制第1组（前4拍）的节奏骨架到后面3组。
-// 旋律/和弦/贝斯：复制细分数量与有声/休止位置，不复制目标组的音符。
+// 轨1/轨2/轨3：把第1组（前4拍）的内容完整复制到 G2–G4 —— 细分 + 音高/和弦级数一起复制。
 function copyRhythmPattern(track){
- if(!['melody','chord','bass'].includes(track))return;
- for(let group=1;group<4;group++){
-  for(let beat=0;beat<4;beat++){
-   const srcIndex=beat,dstIndex=group*4+beat;
-   ensureStepState(track,srcIndex);ensureStepState(track,dstIndex);
-   const srcCell=stepState[track][srcIndex],dstCell=stepState[track][dstIndex];
-   dstCell.subdiv=srcCell.subdiv;
-   while(dstCell.events.length<dstCell.subdiv)dstCell.events.push({pitchOffset:null});
-   dstCell.events=dstCell.events.slice(0,dstCell.subdiv);
-   for(let j=0;j<dstCell.subdiv;j++){
-    const srcEvent=srcCell.events[j]||{pitchOffset:null};
-    const dstEvent=dstCell.events[j]||(dstCell.events[j]={pitchOffset:null});
-    if(srcEvent.pitchOffset==null)dstEvent.pitchOffset=null;
-   }
-  }
- }
- buildStepGrid();
- requestLiveSequenceRefresh();
- markRhythmCopyButton(track);
+ copyStepContent(track);
 }
 
-// 鼓组：同样复制细分数量与"有声/休止"的节奏骨架。
+// 鼓组：整小节复制 —— 把第 1 组（前 4 拍）的鼓点原样复制到 G2–G4，
+// 包括细分、子拍数量和每个子拍具体是哪一个鼓声（K / S / H / O / C / T / R / 空）。
 function copyDrumRhythmPattern(){
  for(let group=1;group<4;group++){
   for(let beat=0;beat<4;beat++){
@@ -1862,18 +2041,32 @@ function copyDrumRhythmPattern(){
    ensureStepState('drums',srcIndex);ensureStepState('drums',dstIndex);
    const src=stepState.drums[srcIndex],dst=stepState.drums[dstIndex];
    dst.subdiv=src.subdiv;
+   dst.events=src.events.map(e=>({pitchOffset:e.pitchOffset==null?null:e.pitchOffset,drum:e.drum||null}));
    while(dst.events.length<dst.subdiv)dst.events.push({pitchOffset:null,drum:null});
    dst.events=dst.events.slice(0,dst.subdiv);
-   for(let j=0;j<dst.subdiv;j++){
-    const s=src.events[j]||{drum:null};
-    if(s.drum)dst.events[j].drum=dst.events[j].drum||'kick';
-    else dst.events[j].drum=null;
-   }
   }
  }
  buildStepGrid();
  requestLiveSequenceRefresh();
  markRhythmCopyButton('drums');
+}
+// 复制第1组（前4拍）的全部内容到后面3组（细分 + 音符/和弦级数），用于轨1/轨2/轨3。
+function copyStepContent(track){
+ if(!['melody','chord','bass'].includes(track))return;
+ for(let group=1;group<4;group++){
+  for(let beat=0;beat<4;beat++){
+   const srcIndex=beat,dstIndex=group*4+beat;
+   ensureStepState(track,srcIndex);ensureStepState(track,dstIndex);
+   const src=stepState[track][srcIndex],dst=stepState[track][dstIndex];
+   dst.subdiv=src.subdiv;
+   dst.events=src.events.map(e=>({pitchOffset:e.pitchOffset==null?null:e.pitchOffset,drum:null}));
+   while(dst.events.length<dst.subdiv)dst.events.push({pitchOffset:null,drum:null});
+   dst.events=dst.events.slice(0,dst.subdiv);
+  }
+ }
+ buildStepGrid();
+ requestLiveSequenceRefresh();
+ markRhythmCopyButton(track);
 }
 
 function markRhythmCopyButton(track){
@@ -1921,8 +2114,9 @@ function markStepPlayhead(local){const idx=Math.max(0,Math.min(STEP_COUNT-1,Math
 // ==================== PLAYBACK LIVE EDIT ====================
 let liveEditTimer=null;
 function requestLiveSequenceRefresh(){
- if(!seqRunning)return;
- clearTimeout(liveEditTimer);
+  if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+  if(!seqRunning)return;
+  clearTimeout(liveEditTimer);
  liveEditTimer=setTimeout(()=>{liveEditTimer=null;refreshSequenceFromLiveEdit();},35);
 }
 ['melody','chord','bass','drums'].forEach(t=>{
@@ -1933,7 +2127,7 @@ function requestLiveSequenceRefresh(){
 // ========================= INSPECTOR =========================
 const inspectorKeys=['source','bright','damp','vibrato','filterType','cutoff','resonance','filterEnv','attack','decay','sustain','release','eqLow','eqHigh','distDrive','driveTone','chorusMix','chorusRate','delayTime','delayMix','reverbMix','pan','octave','unison','sub','glide','compress','tremolo','tremoloRate'];
 function formatParam(k,v){if(k==='pan')return v===0?'C':v>0?'R'+Math.round(v*100):'L'+Math.round(-v*100);if(k==='cutoff')return Math.round(v);if(k==='octave')return (v>0?'+':'')+v+' 8va';if(k==='unison')return v<=0?'关':(Math.round(v*2)+' 层');if(k==='glide')return v<=0?'关':Number(v).toFixed(2)+'s';if(k==='tremoloRate')return Number(v).toFixed(1)+'Hz';if(k==='bright'||k==='damp'||k==='vibrato'||k==='sub'||k==='driveTone'||k==='compress'||k==='tremolo'||k==='filterEnv')return Math.round(v*100)+'%';return Number(v).toFixed(k==='resonance'?1:2).replace(/\.00$/,'')}
-function syncInspectorUI(){const p=trackParams[currentEditingTrack];inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;e.value=p[k];const out=document.getElementById('v_'+k);if(out)out.textContent=formatParam(k,p[k])})}
+function syncInspectorUI(){const p=trackParams[currentEditingTrack];inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;e.value=p[k];const out=document.getElementById('v_'+k);if(out)out.textContent=formatParam(k,p[k])});if(typeof drawCurves==='function')drawCurves()}
 function setCurrentTrack(track){currentEditingTrack=track;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.track===track));syncInspectorUI();updateStripStatus()}
 const TRACK_CN={melody:'轨1 旋律',chord:'轨2 和弦',bass:'轨3 贝斯',drums:'轨4 鼓组'};
 function updateStripStatus(msg){const el=document.getElementById('stripStatus');if(el)el.textContent=msg||('当前编辑：'+(TRACK_CN[currentEditingTrack]||currentEditingTrack))}
@@ -1943,9 +2137,343 @@ function zeroTrackParams(){const t=currentEditingTrack;Object.assign(trackParams
 // 参数重置：恢复该轨出厂默认参数。
 function resetTrackParams(){const t=currentEditingTrack;trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));commitTrackParams(t);updateStripStatus('已重置 · '+(TRACK_CN[t]||t))}
 function resetAllTrackParams(){['melody','chord','bass','drums'].forEach(t=>{trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));initAudio();applyLiveTrackParams(t)});commitTrackParams(currentEditingTrack);updateStripStatus('已重置 · 全部四条轨道')}
-function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。柱式=同时发声；上行/下行/随机=按所选琶音速度依次发声，松开卡片停止。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。自定义和弦可输入相对于根音的半音音程，例如 0,4,7,10,15 = 7♯9。',STEP:'Step Sequencer 是 16 步循环网格。四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲），所以一拍里也能写出八分、三连和十六分的鼓花。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。',KEYBOARD:'点击键盘即可实时发声。键盘显示八度可以独立调整。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。'};alert(h[type]||'')}
+function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；| = 小节线。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。自定义和弦可输入相对于根音的半音音程，例如 0,4,7,10,15 = 7♯9。',STEP:'Step Sequencer 是 16 步循环网格。四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲），所以一拍里也能写出八分、三连和十六分的鼓花。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n每条轨道左侧的「复制 G1」会把第 1 组（前 4 拍）的内容完整复制到 G2–G4：鼓组连具体鼓声一起复制（G1 是 K S K S，复制后三组同样是 K S K S），其余轨连同音高/和弦级数一起复制。',KEYBOARD:'点击键盘即可实时发声。键盘显示八度可以独立调整。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
 
 
+
+// ========================= 实时曲线：ADSR 包络 + EQ 频响 =========================
+const TRACK_COLORS={melody:'#00b0ff',chord:'#a855f7',bass:'#ff9f43',drums:'#ff4d6d'};
+function trackColor(t){return TRACK_COLORS[t]||'#00e676'}
+function fitCanvas(cv){
+  if(!cv)return null;
+  const dpr=window.devicePixelRatio||1,w=cv.clientWidth||300,h=cv.clientHeight||130;
+  if(cv.width!==Math.floor(w*dpr))cv.width=Math.floor(w*dpr);
+  if(cv.height!==Math.floor(h*dpr))cv.height=Math.floor(h*dpr);
+  const ctx=cv.getContext('2d');
+  if(!ctx)return null;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  return {ctx,w,h};
+}
+function fmtSec(v){return v>=1?v.toFixed(2)+'s':Math.round(v*1000)+'ms'}
+function drawAdsrCurve(){
+  const f=fitCanvas(document.getElementById('adsrCanvas'));if(!f)return;
+  const {ctx,w,h}=f,p=trackParams[currentEditingTrack]||{};
+  const a=Math.max(.001,Number(p.attack)||.001),d=Math.max(.005,Number(p.decay)||.005);
+  const s=Math.max(0,Math.min(1,p.sustain==null?.7:Number(p.sustain)));
+  const r=Math.max(.01,Number(p.release)||.01);
+  const hold=Math.max(.25,(a+d+r)*.55),total=a+d+hold+r;
+  const pad=12,W=w-pad*2,H=h-pad*1.8;
+  const X=t=>pad+W*(t/total),Y=v=>pad+H*(1-v);
+  ctx.strokeStyle='rgba(255,255,255,.055)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad+H*i/4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke()}
+  ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(0,176,255,.3)';
+  [a,a+d,a+d+hold].forEach(t=>{const x=X(t);ctx.beginPath();ctx.moveTo(x,pad-4);ctx.lineTo(x,pad+H);ctx.stroke()});
+  ctx.setLineDash([]);
+  const pts=[[0,0],[a,1],[a+d,s],[a+d+hold,s],[total,0]];
+  const grad=ctx.createLinearGradient(0,pad,0,pad+H);
+  grad.addColorStop(0,'rgba(0,230,118,.34)');grad.addColorStop(1,'rgba(0,230,118,.02)');
+  ctx.beginPath();ctx.moveTo(X(0),Y(0));
+  pts.forEach(pt=>ctx.lineTo(X(pt[0]),Y(pt[1])));
+  ctx.lineTo(X(total),Y(0));ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();pts.forEach((pt,i)=>{const x=X(pt[0]),y=Y(pt[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+  ctx.strokeStyle='#00e676';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+  pts.forEach(pt=>{ctx.beginPath();ctx.arc(X(pt[0]),Y(pt[1]),2.6,0,Math.PI*2);ctx.fillStyle='#eafff3';ctx.fill()});
+  ctx.font='9px ui-monospace,Consolas,monospace';ctx.fillStyle='rgba(255,255,255,.5)';ctx.textAlign='center';
+  ctx.fillText('A',X(a/2),h-3);ctx.fillText('D',X(a+d/2),h-3);
+  ctx.fillText('S',X(a+d+hold/2),h-3);ctx.fillText('R',X(a+d+hold+r/2),h-3);
+  const info=document.getElementById('curveAdsrInfo');
+  if(info)info.textContent=`A ${fmtSec(a)} · D ${fmtSec(d)} · S ${Math.round(s*100)}% · R ${fmtSec(r)}`;
+}
+function eqDbAt(f,p){
+  const lo=1/(1+Math.pow(f/250,2)),hi=1/(1+Math.pow(4500/f,2));
+  let db=(Number(p.eqLow)||0)*lo+(Number(p.eqHigh)||0)*hi;
+  const cut=Math.max(40,Number(p.cutoff)||12000),q=Math.max(0,Number(p.resonance)||0);
+  const type=p.filterType||'lowpass',lr=Math.log2(f/cut);
+  if(type==='lowpass')db+=-12*Math.max(0,lr);
+  else if(type==='highpass')db+=-12*Math.max(0,-lr);
+  else if(type==='bandpass')db+=-12*Math.abs(lr)/2;
+  else if(type==='notch')db+=-20*Math.exp(-(lr*lr)/.02);
+  db+=q*2.4*Math.exp(-(lr*lr)/.05);
+  return Math.max(-26,Math.min(26,db));
+}
+function drawEqCurve(){
+  const f=fitCanvas(document.getElementById('eqCanvas'));if(!f)return;
+  const {ctx,w,h}=f,p=trackParams[currentEditingTrack]||{};
+  const pad=12,W=w-pad*2,H=h-pad*1.8,F0=20,F1=20000;
+  const X=fr=>pad+W*(Math.log(fr/F0)/Math.log(F1/F0));
+  const Y=db=>pad+H*(0.5-db/48);
+  ctx.strokeStyle='rgba(255,255,255,.055)';ctx.lineWidth=1;
+  [100,1000,10000].forEach(fr=>{const x=X(fr);ctx.beginPath();ctx.moveTo(x,pad-4);ctx.lineTo(x,pad+H);ctx.stroke()});
+  [-12,0,12].forEach(db=>{const y=Y(db);ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.strokeStyle=db===0?'rgba(255,255,255,.18)':'rgba(255,255,255,.055)';ctx.stroke()});
+  const N=Math.max(60,Math.floor(W));const pts=[];
+  for(let i=0;i<=N;i++){const fr=F0*Math.pow(F1/F0,i/N);pts.push([fr,eqDbAt(fr,p)])}
+  const grad=ctx.createLinearGradient(0,pad,0,pad+H);
+  grad.addColorStop(0,'rgba(0,176,255,.36)');grad.addColorStop(1,'rgba(0,176,255,.02)');
+  ctx.beginPath();ctx.moveTo(X(pts[0][0]),Y(0));
+  pts.forEach(pt=>ctx.lineTo(X(pt[0]),Y(pt[1])));
+  ctx.lineTo(X(pts[pts.length-1][0]),Y(0));ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();pts.forEach((pt,i)=>{const x=X(pt[0]),y=Y(pt[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+  ctx.strokeStyle='#00b0ff';ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+  const cut=Math.max(40,Number(p.cutoff)||12000);
+  if(cut<F1&&cut>F0){
+    const x=X(cut);ctx.setLineDash([2,3]);ctx.strokeStyle='rgba(255,159,67,.55)';
+    ctx.beginPath();ctx.moveTo(x,pad-4);ctx.lineTo(x,pad+H);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.font='9px ui-monospace,Consolas,monospace';ctx.fillStyle='rgba(255,255,255,.45)';ctx.textAlign='center';
+  ctx.fillText('100',X(100),h-3);ctx.fillText('1k',X(1000),h-3);ctx.fillText('10k',X(10000),h-3);
+  ctx.textAlign='left';ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillText('+12',pad+2,Y(12)-2);
+  ctx.fillText('-12',pad+2,Y(-12)+9);
+  const info=document.getElementById('curveEqInfo');
+  if(info)info.textContent=`Low ${(Number(p.eqLow)||0)>0?'+':''}${(Number(p.eqLow)||0).toFixed(1)}dB · High ${(Number(p.eqHigh)||0)>0?'+':''}${(Number(p.eqHigh)||0).toFixed(1)}dB · ${({lowpass:'LP',highpass:'HP',bandpass:'BP',notch:'Notch'})[p.filterType||'lowpass']} ${Math.round(cut/100)/10}k`;
+}
+function drawCurves(){try{drawAdsrCurve();drawEqCurve()}catch(e){console.error('曲线绘制失败',e)}}
+
+// ========================= 实时编曲视图 (Piano Roll) =========================
+let rollVisible={melody:true,chord:true,bass:true,drums:true};
+let rollAll=[],rollData=[],rollLength=16,rollMin=48,rollMax=84,rollBeat=-1,rollTimer=null;
+const ROLL_DRUM_ORDER=['kick','snare','closedHat','openHat','clap','tom','crash'];
+const ROLL_DRUM_LABEL={kick:'K',snare:'S',closedHat:'H',openHat:'O',clap:'C',tom:'T',crash:'R'};
+function scheduleRollRefresh(){
+  clearTimeout(rollTimer);
+  rollTimer=setTimeout(()=>{rollTimer=null;refreshRollData();},60);
+}
+function refreshRollData(){
+  const all=safeBuildEvents(playbackMode)||[];
+  rollAll=all;
+  rollLength=Math.max(.25,playbackMode==='step'?stepLoopLength:getDawLength(all));
+  rollData=all.filter(e=>rollVisible[e.track]!==false);
+  let lo=127,hi=0;
+  all.forEach(e=>{if(e.drum||e.pitch==null)return;if(e.pitch<lo)lo=e.pitch;if(e.pitch>hi)hi=e.pitch});
+  if(hi<lo){lo=48;hi=84}
+  lo=Math.max(0,lo-2);hi=Math.min(127,hi+2);
+  if(hi-lo<14){const c=Math.round((lo+hi)/2);lo=Math.max(0,c-8);hi=Math.min(127,c+8)}
+  rollMin=lo;rollMax=hi;
+  drawRoll();
+}
+function renderRollToggles(){
+  const box=document.getElementById('rollToggles');if(!box)return;
+  box.innerHTML='';
+  [['melody','轨1 旋律'],['chord','轨2 和弦'],['bass','轨3 贝斯'],['drums','轨4 鼓组']].forEach(([t,label])=>{
+    const b=document.createElement('button');b.type='button';
+    b.className='roll-toggle'+(rollVisible[t]?'':' off');
+    b.innerHTML=`<i class="legend-dot ${t}"></i>${label}`;
+    b.title='点击隐藏 / 显示「'+label+'」在编曲视图中的图形（不影响发声）';
+    b.addEventListener('click',()=>{rollVisible[t]=!rollVisible[t];renderRollToggles();refreshRollData();});
+    box.appendChild(b);
+  });
+}
+function setRollPlayhead(beat){rollBeat=(beat==null?-1:beat);drawRoll()}
+function drawRoll(){
+  const f=fitCanvas(document.getElementById('rollCanvas'));if(!f)return;
+  const {ctx,w,h}=f;
+  const padL=36,padR=10,padT=16,padB=8;
+  const drumVisible=rollVisible.drums!==false;
+  const drumH=drumVisible?Math.min(64,Math.max(28,h*.28)):0;
+  const pitchTop=padT,pitchH=Math.max(40,h-padT-padB-drumH-4);
+  const len=Math.max(.25,rollLength);
+  const X=b=>padL+(w-padL-padR)*(b/len);
+  ctx.fillStyle='rgba(255,255,255,.014)';ctx.fillRect(padL,pitchTop,w-padL-padR,pitchH);
+  // 时间网格：每拍细线、每小节粗线 + 小节号
+  const step=len>64?4:(len>32?2:1);
+  ctx.font='9px ui-monospace,Consolas,monospace';ctx.textAlign='center';
+  for(let b=0;b<=len+1e-6;b+=step){
+    const x=X(b),isBar=Math.abs(b%4)<1e-6;
+    ctx.strokeStyle=isBar?'rgba(255,255,255,.16)':'rgba(255,255,255,.055)';
+    ctx.beginPath();ctx.moveTo(x,pitchTop);ctx.lineTo(x,h-padB);ctx.stroke();
+    if(isBar&&b<len){ctx.fillStyle='rgba(255,255,255,.4)';ctx.fillText(String(Math.floor(b/4)+1),x,padT-4)}
+  }
+  // 音高：C 音横线 + 音名
+  const rows=rollMax-rollMin+1,rowH=pitchH/rows;
+  ctx.textAlign='left';
+  for(let p=rollMin;p<=rollMax;p++){
+    if(((p%12)+12)%12!==0)continue;
+    const y=pitchTop+(rollMax-p)*rowH;
+    ctx.strokeStyle='rgba(255,255,255,.08)';
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(w-padR,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.34)';
+    ctx.fillText(noteName(p),2,y+3);
+  }
+  // 音符
+  const beat=rollBeat;
+  rollData.forEach(ev=>{
+    if(ev.drum)return;
+    const x1=X(ev.start),x2=X(ev.start+Math.max(.06,ev.duration||.25));
+    const y=pitchTop+(rollMax-ev.pitch)*rowH;
+    const active=beat>=0&&beat>=ev.start&&beat<ev.start+Math.max(.06,ev.duration||.25);
+    const audible=isTrackAudible(ev.track);
+    ctx.globalAlpha=audible?(active?1:.82):.28;
+    ctx.fillStyle=trackColor(ev.track);
+    const rw=Math.max(2.5,x2-x1-1),rh=Math.max(2.5,rowH-1);
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x1,y+0.5,rw,rh,Math.min(3,rh/2));
+    else ctx.rect(x1,y+0.5,rw,rh);
+    ctx.fill();
+    if(active){ctx.strokeStyle='#ffffff';ctx.lineWidth=1.2;ctx.stroke()}
+    ctx.globalAlpha=1;
+  });
+  // 鼓组
+  if(drumVisible){
+    const top=pitchTop+pitchH+4,laneH=drumH/ROLL_DRUM_ORDER.length;
+    ctx.fillStyle='rgba(255,255,255,.02)';ctx.fillRect(padL,top,w-padL-padR,drumH);
+    ROLL_DRUM_ORDER.forEach((dt,i)=>{
+      const y=top+i*laneH;
+      ctx.fillStyle='rgba(255,255,255,.4)';ctx.textAlign='left';ctx.font='9px ui-monospace,Consolas,monospace';
+      ctx.fillText(ROLL_DRUM_LABEL[dt],6,y+laneH*.75);
+      ctx.strokeStyle='rgba(255,255,255,.05)';
+      ctx.beginPath();ctx.moveTo(padL,y+laneH);ctx.lineTo(w-padR,y+laneH);ctx.stroke();
+    });
+    rollData.forEach(ev=>{
+      if(!ev.drum)return;
+      const i=ROLL_DRUM_ORDER.indexOf(ev.drum);if(i<0)return;
+      const y=top+i*laneH+1,x=X(ev.start);
+      const active=beat>=0&&beat>=ev.start&&beat<ev.start+.3;
+      ctx.globalAlpha=isTrackAudible('drums')?1:.28;
+      ctx.fillStyle=active?'#ffffff':trackColor('drums');
+      ctx.beginPath();ctx.rect(x,y,Math.max(4,6),laneH-2);ctx.fill();
+      ctx.globalAlpha=1;
+    });
+  }
+  // 播放头
+  if(beat>=0){
+    const x=X(beat>len?len:beat);
+    ctx.strokeStyle='#00e676';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(x,pitchTop-6);ctx.lineTo(x,h-padB);ctx.stroke();
+    ctx.fillStyle='#00e676';
+    ctx.beginPath();ctx.moveTo(x-4,pitchTop-9);ctx.lineTo(x+4,pitchTop-9);ctx.lineTo(x,pitchTop-3);ctx.closePath();ctx.fill();
+  }
+  if(!rollData.length){
+    ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText('当前音序没有内容（或全部轨道都被隐藏了）',w/2,h/2);
+  }
+}
+
+// ========================= SOLO / MUTE =========================
+const trackMute={melody:false,chord:false,bass:false,drums:false};
+const trackSolo={melody:false,chord:false,bass:false,drums:false};
+function anyTrackSolo(){return ['melody','chord','bass','drums'].some(t=>trackSolo[t])}
+function isTrackAudible(t){return anyTrackSolo()?!!trackSolo[t]:!trackMute[t]}
+function toggleTrackSM(track,kind){
+  if(kind==='mute')trackMute[track]=!trackMute[track];else trackSolo[track]=!trackSolo[track];
+  refreshSoloMuteUI();
+  requestLiveSequenceRefresh();
+  scheduleRollRefresh();
+  if(typeof scheduleAutosave==='function')scheduleAutosave();
+}
+function refreshSoloMuteUI(){
+  document.querySelectorAll('.sm-btn').forEach(b=>{
+    const on=b.dataset.sm==='mute'?trackMute[b.dataset.track]:trackSolo[b.dataset.track];
+    b.classList.toggle('on',!!on);
+  });
+}
+function buildSoloMuteButtons(){
+  ['melody','chord','bass','drums'].forEach(t=>{
+    const lane=document.querySelector('.track-lane.'+t);
+    if(lane&&!lane.querySelector('.sm-group')){
+      const g=document.createElement('div');g.className='sm-group';
+      g.innerHTML=`<button class="sm-btn solo" data-sm="solo" data-track="${t}" title="Solo：只播放${TRACK_CN[t]}，其他轨道静音">S</button><button class="sm-btn mute" data-sm="mute" data-track="${t}" title="Mute：静音${TRACK_CN[t]}，其他轨道不变">M</button>`;
+      const vol=lane.querySelector('.vol-box');
+      lane.insertBefore(g,vol||null);
+      g.querySelectorAll('.sm-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();toggleTrackSM(b.dataset.track,b.dataset.sm)}));
+    }
+  });
+  refreshSoloMuteUI();
+}
+function makeStepSmRow(track){
+  const row=document.createElement('div');row.className='step-sm';
+  row.innerHTML=`<button class="sm-btn solo" data-sm="solo" data-track="${track}" title="Solo：只播放这一轨">S</button><button class="sm-btn mute" data-sm="mute" data-track="${track}" title="Mute：静音这一轨">M</button>`;
+  row.querySelectorAll('.sm-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();toggleTrackSM(b.dataset.track,b.dataset.sm)}));
+  return row;
+}
+
+// ========================= 自定义和弦进行 / 播放一遍 =========================
+const CUSTOM_PROG_KEY='soundworkstation.customProgressions';
+let customProgressions=[];
+let lastChordProgKey='pop',lastStepProgKey='pop',restoreLoopAfterOnce=null;
+function loadCustomProgressions(){
+  try{
+    const raw=localStorage.getItem(CUSTOM_PROG_KEY);
+    customProgressions=raw?JSON.parse(raw):[];
+    if(!Array.isArray(customProgressions))customProgressions=[];
+  }catch(e){customProgressions=[]}
+  customProgressions.forEach((cp,i)=>{if(cp&&Array.isArray(cp.degrees))COMMON_PROGRESSIONS['custom_'+i]=cp.degrees});
+}
+function saveCustomProgressions(){try{localStorage.setItem(CUSTOM_PROG_KEY,JSON.stringify(customProgressions))}catch(e){}}
+function parseProgressionInput(str){
+  const roman={'I':1,'II':2,'III':3,'IV':4,'V':5,'VI':6,'VII':7,'i':1,'ii':2,'iii':3,'iv':4,'v':5,'vi':6,'vii':7};
+  const toks=String(str||'').trim().split(/[\s,，、.。\-–—|/]+/).filter(Boolean);
+  const out=[];
+  for(const t of toks){
+    let d=null;
+    if(/^[1-7]$/.test(t))d=Number(t);
+    else{const k=t.replace(/[°º°0]/g,'');if(roman[k]!=null)d=roman[k]}
+    if(!d)return null;
+    out.push(d);
+  }
+  return out.length?out:null;
+}
+function renderCustomProgressionButtons(){
+  const box=document.getElementById('chordProgButtons');if(!box)return;
+  box.querySelectorAll('.prog-custom').forEach(b=>b.remove());
+  customProgressions.forEach((cp,i)=>{
+    COMMON_PROGRESSIONS['custom_'+i]=cp.degrees;
+    const b=document.createElement('button');
+    b.type='button';b.className='progression-btn chord-progression prog-custom';b.dataset.prog='custom_'+i;
+    b.innerHTML=`<span>⭐ ${cp.text||progressionDegreeText(cp.degrees)}</span><span class="prog-del" title="删除这个自定义进行">✕</span>`;
+    b.addEventListener('click',e=>{
+      if(e.target.classList&&e.target.classList.contains('prog-del')){
+        customProgressions.splice(i,1);saveCustomProgressions();renderCustomProgressionButtons();return;
+      }
+      applyChordProgressionToDaw('custom_'+i,true);
+    });
+    box.appendChild(b);
+  });
+}
+function playProgressionOnce(mode){
+  const key=(mode==='step'?lastStepProgKey:lastChordProgKey)||'pop';
+  if(mode==='step'){
+    if(key!=='reset')setStepChordProgression(key);
+  }else{
+    if(key!=='reset')applyChordProgressionToDaw(key,false);
+  }
+  const loop=document.getElementById('loopToggle');
+  if(loop){restoreLoopAfterOnce=loop.checked;loop.checked=false;}
+  if(mode==='step')playStep();else playDaw();
+}
+
+// ========================= 示范曲（DAW 默认四轨） =========================
+// C 大调 · I–V–vi–IV（C–G–Am–F）：和声每小节一个，贝斯走根音—五音，
+// 旋律全部落在和弦内音上，鼓组是标准的「底鼓 1/3 + 军鼓 2/4」backbeat。
+const DEMO_SONG={
+  melody:'5 - [3 5] 6 | 5 - 7, 2 | 1 - [3 1] 2 | 1 - - -',
+  chord: '1 - - - | 5 - - - | 6 - - - | 4 - - -',
+  bass:  '1 - 5 - | 5 - 2 - | 6 - 3 - | 4 - 1 -',
+  drums: 'K S K S | K S CH S | K S K S | K S K T'
+};
+// 老版本的默认谱（军鼓落在小节头上、和声两拍一换，听着会比较怪）
+const LEGACY_DEMO={
+  melody:'[1 2] 3 [4 5] | 6 - 5 - | {4 4 4} 3 2 | 1 - - -',
+  chord: '1 - 5 - | 6 - 3 - | 4 - 1 - | 5 - 1 -',
+  bass:  '1 1 5 5 | 6 6 3 3 | 4 4 1 1 | 5 5 1 1',
+  drums: 'K - CH - | S - CH - | K - OH - | S - CH -'
+};
+function isLegacyDemo(d){
+  return !!d&&d.melody===LEGACY_DEMO.melody&&d.chord===LEGACY_DEMO.chord&&d.bass===LEGACY_DEMO.bass&&d.drums===LEGACY_DEMO.drums;
+}
+function applyDemoSong(play){
+  ['melody','chord','bass','drums'].forEach(t=>{
+    const el=document.getElementById(t+'Input');
+    if(el)el.value=DEMO_SONG[t];
+  });
+  lastChordNotes=[];
+  if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();
+  if(play){
+    if(seqRunning&&playbackMode==='daw')refreshSequenceFromLiveEdit();
+    else playDaw();
+  }else{
+    requestLiveSequenceRefresh();
+  }
+  return true;
+}
 
 // ========================= 工程保存 / 读取 / 导入导出 =========================
 const PROJECT_KEY='soundworkstation.project.v1';
@@ -1965,8 +2493,15 @@ function collectProject(){
     loopBars:document.getElementById('loopBars').value,
     loop:document.getElementById('loopToggle').checked,
     stepResolution:Number(document.getElementById('stepResolution').value)||.25,
+    chordPlayStyle:(document.getElementById('chordPlayStyle')||{}).value,
+    arpRate:(document.getElementById('arpRate')||{}).value,
+    arpSpeed:Number((document.getElementById('arpSpeed')||{}).value)||1,
+    dawChordArp:(document.getElementById('dawChordArp')||{}).value,
+    dawChordArpRate:(document.getElementById('dawChordArpRate')||{}).value,
     transpose:keyboardTranspose,
     masterVol:Number(document.getElementById('masterVol')?document.getElementById('masterVol').value:.58),
+    soloMute:{mute:Object.assign({},trackMute),solo:Object.assign({},trackSolo)},
+    rollVisible:Object.assign({},rollVisible),
     playbackMode:playbackMode,
     userChordSelections:userChordSelections.slice(),
     trackOctOffsets:JSON.parse(JSON.stringify(trackOctOffsets))
@@ -1979,8 +2514,10 @@ function applyProject(p){
       if(p.trackParams[t])trackParams[t]=Object.assign({},trackParams[t],p.trackParams[t]);
     });
     if(p.stepState)['melody','chord','bass','drums'].forEach(t=>{if(p.stepState[t])stepState[t]=p.stepState[t];});
-    if(p.daw)['melody','chord','bass','drums'].forEach(t=>{
-      const el=document.getElementById(t+'Input');if(el&&p.daw[t]!=null)el.value=p.daw[t];
+    // 如果本机存的还是老版默认谱（用户没改过），自动换成新的示范曲
+    const dawSrc=(p.daw&&isLegacyDemo(p.daw))?DEMO_SONG:p.daw;
+    if(dawSrc)['melody','chord','bass','drums'].forEach(t=>{
+      const el=document.getElementById(t+'Input');if(el&&dawSrc[t]!=null)el.value=dawSrc[t];
     });
     ['melody','chord','bass','drums'].forEach(t=>{ensureStepState&&0;});
     if(p.vol)['melody','chord','bass','drums'].forEach(t=>{
@@ -1992,6 +2529,18 @@ function applyProject(p){
     if(p.loopBars){const l=document.getElementById('loopBars');if(l)l.value=p.loopBars;}
     if(p.loop!=null){const l=document.getElementById('loopToggle');if(l)l.checked=!!p.loop;}
     if(p.stepResolution){const s=document.getElementById('stepResolution');if(s){s.value=String(p.stepResolution);}stepResolution=getStepResolution();stepLoopLength=STEP_COUNT*stepResolution;}
+    [['chordPlayStyle','chordPlayStyle'],['arpRate','arpRate'],['dawChordArp','dawChordArp'],['dawChordArpRate','dawChordArpRate']].forEach(([k,id])=>{
+      if(p[k]!=null){const e=document.getElementById(id);if(e)e.value=String(p[k]);}
+    });
+    if(p.arpSpeed!=null){const e=document.getElementById('arpSpeed');if(e)e.value=String(p.arpSpeed);}
+    if(typeof syncArpSpeedLabel==='function')syncArpSpeedLabel();
+    if(p.soloMute)['melody','chord','bass','drums'].forEach(t=>{
+      if(p.soloMute.mute&&p.soloMute.mute[t]!=null)trackMute[t]=!!p.soloMute.mute[t];
+      if(p.soloMute.solo&&p.soloMute.solo[t]!=null)trackSolo[t]=!!p.soloMute.solo[t];
+    });
+    if(p.rollVisible)['melody','chord','bass','drums'].forEach(t=>{
+      if(p.rollVisible[t]!=null)rollVisible[t]=!!p.rollVisible[t];
+    });
     if(typeof p.transpose==='number'){keyboardTranspose=p.transpose;updateTransposeUI();}
     if(p.masterVol!=null){const m=document.getElementById('masterVol');if(m){m.value=p.masterVol;paintRange(m);}applyMasterVolume();}
     if(p.userChordSelections)userChordSelections=p.userChordSelections.slice();
@@ -2112,6 +2661,7 @@ async function exportWav(){
     events.forEach(ev=>{
       const when=ev.start*secPerBeat+.05;
       if(when>dur-0.1)return;
+      if(!isTrackAudible(ev.track))return;   // 导出同样尊重 Solo / Mute
       if(ev.drum)triggerDrumAt(ev.drum,when,'drums');
       else playNoteAt(ev.pitch,ev.track,Math.max(.05,ev.duration),when);
     });
@@ -2149,7 +2699,76 @@ async function exportWav(){
 const KEY_NAMES=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 const KEY_ALIAS={'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb','B#':'C','Cb':'B','Db':'Db','Eb':'Eb','Gb':'Gb','Ab':'Ab','Bb':'Bb'};
 
-// 把任意来源的简谱文本清洗成 DAW 语法，并顺带抽出调号 / 速度 / 拍号
+// ---------- 节奏识别：减时线（八分 / 十六分）与附点 ----------
+// 纯文本与 OCR 里减时线常见写法：
+//   ① 数字后直接跟下划线       1_ 2_   /   1_2_3_      → 八分
+//   ② 数字后跟两个下划线       1__                     → 十六分
+//   ③ 音符行下面另起一行下划线（可叠两行）             → 八分 / 十六分
+// 附点：数字后面的一个点       1.                      → 时值 ×1.5
+const UL_CHARS='_＿﹍﹎‗¯ˍˉ–—';
+function isUnderlineChar(c){return c&&UL_CHARS.indexOf(c)>=0}
+// 一行是否"纯下划线行"（只含下划线、空白与小节线）
+function isUnderlineLine(line){
+  const t=String(line||'').replace(/[\s|]/g,'');
+  if(!t)return false;
+  for(const c of t)if(!isUnderlineChar(c))return false;
+  return true;
+}
+function hasUnderlineAt(line,col){
+  for(let k=col-1;k<=col+1;k++){
+    if(k<0||k>=line.length)continue;
+    if(isUnderlineChar(line[k]))return true;
+  }
+  return false;
+}
+// 把一行简谱切成记号：音符 / 休止 / 增时线 / 小节线 / 括号
+function tokenizeScoreLine(line){
+  const toks=[];let depth=0;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c>='0'&&c<='7'){
+      if(c==='0'){toks.push({type:'rest',col:i});continue}
+      const tok={type:'note',deg:c,mods:'',dot:false,level:0,col:i};
+      while(i+1<line.length&&"',".includes(line[i+1])){tok.mods+=line[i+1];i++}
+      if(line[i+1]==='.'){tok.dot=true;i++}
+      while(i+1<line.length&&line[i+1]==='_'){tok.level=Math.min(2,tok.level+1);i++}
+      toks.push(tok);continue;
+    }
+    if(c==='-'||c==='—'||c==='–'){toks.push({type:'ext',col:i});continue}
+    if(c==='|'){toks.push({type:'bar',col:i});continue}
+    if(c==='['||c==='{'){depth++;toks.push({type:'brk',ch:c,col:i});continue}
+    if(c===']'||c==='}'){if(depth>0)depth--;toks.push({type:'brk',ch:c,col:i});continue}
+    if(c==='_'){ // 单独出现的下划线：挂到最近的一个音符上
+      for(let k=toks.length-1;k>=0;k--){if(toks[k].type==='note'){if(toks[k].level<2)toks[k].level++;break}}
+      continue;
+    }
+  }
+  return toks;
+}
+// 记号 → DAW 语法：八分组 = [1 2]，十六分组 = [[1 2 3 4]]，附点 = 1.
+function serializeScoreTokens(toks){
+  let out='',level=0,depth=0;
+  const push=s=>{if(!out||/[\s\[{(]$/.test(out))out+=s;else out+=' '+s};
+  const close=()=>{while(level>0){out+=']';level--}};
+  const open=L=>{if(L!==level)close();while(level<L){if(out&&!/[\s\[{(]$/.test(out))out+=' ';out+='[';level++}};
+  toks.forEach(t=>{
+    if(t.type==='note'){
+      const body=t.deg+t.mods+(t.dot?'.':'');
+      if(depth>0){push(body);return}
+      open(t.level);push(body);
+    }else if(t.type==='rest'){close();push('0')}
+    else if(t.type==='ext'){close();push('-')}
+    else if(t.type==='bar'){close();push('|')}
+    else if(t.type==='brk'){
+      if(t.ch==='['||t.ch==='{'){close();depth++}else if(depth>0){close();depth--}else close();
+      push(t.ch);
+    }
+  });
+  close();
+  return out.replace(/[ \t]+/g,' ').trim();
+}
+
+// 把任意来源的简谱文本清洗成 DAW 语法，并顺带抽出调号 / 速度 / 拍号 / 节奏
 function normalizeScoreText(raw){
   let s=String(raw||'');
   // 全角 → 半角
@@ -2172,17 +2791,48 @@ function normalizeScoreText(raw){
   s=s.replace(/[♩♪]\s*[=＝]\s*\d{2,3}/g,' ');
   s=s.replace(/(?:速度|tempo|TEMPO)\s*[=＝:：]?\s*\d{2,3}/g,' ');
   s=s.replace(/\d\s*\/\s*(?:4|8|2)/g,' ');
-  // 只保留记谱用得到的字符，其余（歌词、标注）一律变空格
-  s=s.split(/\r?\n/).map(line=>line.replace(/[^0-7\s|\-\[\]{}'"，,、.。·]/g,' ')).join('\n');
-  // 连写的数字拆开：1235 → 1 2 3 5
-  s=s.replace(/([0-7])(?=[0-7])/g,'$1 ');
-  // 中文逗号顿号句号视作分隔符
-  s=s.replace(/[，、。·]/g,' ');
-  // 多出来的单点当作分隔符（高低音点的位置 OCR 拿不到，只能这样）
-  s=s.replace(/\.(?=\s|$)/g,' ');
-  s=s.replace(/[ \t]+/g,' ').replace(/[ \t]*\n[ \t]*/g,'\n');
-  s=s.split('\n').map(l=>l.trim()).filter(l=>l.replace(/[\s|]/g,'')).join('\n').trim();
-  return {text:s,meta};
+  // 只保留记谱用得到的字符，其余（歌词、标注）一律变空格。
+  // 注意必须保留下划线：它代表八分 / 十六分音符的减时线。
+  s=s.split(/\r?\n/).map(line=>line.replace(/[^0-7\s|\-\[\]{}'",._]/g,' ')).join('\n');
+  // 按行整理：把“纯下划线行”归并到它上面最近的音符行
+  const rows=[];
+  s.split('\n').forEach(line=>{
+    if(isUnderlineLine(line)){
+      for(let k=rows.length-1;k>=0;k--){
+        if(rows[k].line.trim()){rows[k].under.push(line);break}
+      }
+      return;
+    }
+    rows.push({line,under:[]});
+  });
+  const stats={notes:0,eighth:0,sixteenth:0,dot:0};
+  const outLines=rows.map(r=>{
+    const toks=tokenizeScoreLine(r.line);
+    // 下划线行的节奏：默认按列对齐（±1 格容差）。
+    // 只有当下划线是"连续一整段"并且覆盖了首尾两个音符时，才认为整行都是这个时值。
+    const noteCols=toks.filter(t=>t.type==='note').map(t=>t.col);
+    const firstCol=noteCols.length?noteCols[0]:0,lastCol=noteCols.length?noteCols[noteCols.length-1]:0;
+    const solid=r.under.map(u=>{
+      const runs=u.match(/[_＿﹍﹎‗¯ˍˉ–—]+/g)||[];
+      if(runs.length!==1)return false;
+      const a=u.indexOf(runs[0]),b=a+runs[0].length-1;
+      return a<=firstCol+1&&b>=lastCol-1;
+    });
+    toks.forEach(t=>{
+      if(t.type!=='note')return;
+      let lvl=t.level;
+      r.under.forEach((u,li)=>{if(solid[li]||hasUnderlineAt(u,t.col))lvl=Math.max(lvl,li+1)});
+      t.level=Math.min(2,lvl);
+      stats.notes++;
+      if(t.dot)stats.dot++;
+      if(t.level===1)stats.eighth++;
+      if(t.level===2)stats.sixteenth++;
+    });
+    return serializeScoreTokens(toks);
+  }).filter(l=>l.replace(/[\s|]/g,''));
+  const text=outLines.join('\n').trim();
+  meta.stats=stats;
+  return {text,meta};
 }
 function setKeyByName(n){
   if(!n)return false;
@@ -2279,30 +2929,51 @@ function applyScoreText(raw,opts){
 // ========================= KEYBOARD =========================
 function initKeyboard(){
   const div=document.getElementById('piano');
+  if(!div)return;
+  const wrapper=div.parentElement;
   div.innerHTML='';
   keyboardHeld.clear();
-  const baseMidi=52+keyboardOctOffset*12+keyboardTranspose,whiteW=window.innerWidth<=650?35:40,blackW=window.innerWidth<=650?23:26;
-  div.style.width=(34*whiteW)+'px';
-  let wi=0;
-  for(let i=0;i<48;i++){
-    const midi=baseMidi+i,isBlack=[1,3,6,8,10].includes(((midi%12)+12)%12),key=document.createElement('div');
+  // 键宽自适应：先按可用宽度算，保证最右边的键也能完整显示（不用横向拖动）
+  const small=window.innerWidth<=650;
+  const whiteTarget=small?22:29;              // 小屏 3 个八度，大屏 4 个八度 + 1
+  let whiteW=small?35:40;
+  if(wrapper){
+    const cs=window.getComputedStyle?window.getComputedStyle(wrapper):null;
+    const pad=cs?(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0):32;
+    const avail=(wrapper.clientWidth||0)-pad-2;
+    if(avail>80){
+      const fit=Math.floor(avail/whiteTarget);
+      if(fit>0)whiteW=Math.max(small?16:18,Math.min(whiteW,fit));
+    }
+  }
+  const blackW=Math.max(11,Math.round(whiteW*.65));
+  const baseMidi=52+keyboardOctOffset*12+keyboardTranspose;
+  let wi=0,midi=baseMidi,whites=0,count=0;
+  // 一直加到摆满 whiteTarget 个白键，并且最后一个是白键（避免末尾出现半个黑键被切掉）
+  while(whites<whiteTarget&&count<80){
+    const isBlack=[1,3,6,8,10].includes(((midi%12)+12)%12);
+    if(!isBlack&&whites>=whiteTarget)break;
+    // 关键：必须把当前音高固定成局部常量，否则所有琴键的事件回调会共用同一个 midi 变量，
+    // 结果就是点哪个键都发同一个音。
+    const m=midi;
+    const key=document.createElement('div');
     key.className='key '+(isBlack?'black':'white');
-    key.dataset.midi=midi;
+    key.dataset.midi=m;
     key.style.width=(isBlack?blackW:whiteW)+'px';
     key.style.height=(isBlack?'96px':'164px');
     key.style.left=(isBlack?wi*whiteW-blackW/2:whiteW*wi++)+'px';
     key.innerHTML='<span class="note-name"></span><span class="solfege"></span>';
     const release=()=>{
-      releaseHeldNote(midi);
-      if(keyVoicesForMidi(midi)===0)key.classList.remove('active');
+      releaseHeldNote(m);
+      if(keyVoicesForMidi(m)===0)key.classList.remove('active');
     };
     key.addEventListener('pointerdown',e=>{
       e.preventDefault();
       initAudio();
-      releaseHeldNote(midi);
+      releaseHeldNote(m);
       try{key.setPointerCapture(e.pointerId)}catch{}
-      const id=playHeldNote(midi,currentEditingTrack);
-      if(id)keyboardHeld.set(midi,id);
+      const id=playHeldNote(m,currentEditingTrack);
+      if(id)keyboardHeld.set(m,id);
       key.classList.add('active');
     });
     key.addEventListener('pointerup',release);
@@ -2310,7 +2981,11 @@ function initKeyboard(){
     key.addEventListener('lostpointercapture',release);
     key.addEventListener('pointerleave',e=>{if(e.buttons===0)release()});
     div.appendChild(key);
+    if(!isBlack)whites++;
+    midi++;count++;
   }
+  // 末尾那个黑键（若有）会露出半格，宽度上补一点，避免被容器裁掉
+  div.style.width=(whites*whiteW+Math.ceil(blackW/2)+2)+'px';
   renderKeyboardLabels();
 }
 function renderKeyboardLabels(){const root=Number(document.getElementById('keySelect').value),names=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];document.getElementById('keyboardKeyName').textContent=names[root];document.querySelectorAll('.key').forEach(k=>{const m=Number(k.dataset.midi);k.querySelector('.note-name').textContent=noteName(m);k.querySelector('.solfege').textContent=solfegeFor(m,root)})}
@@ -2376,6 +3051,11 @@ function updateMetroText(){document.getElementById('metroSignatureText').textCon
   ['bpmSlider','stepBpmSlider','keySelect','loopBars','stepResolution','loopToggle'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.addEventListener('change',auto);
   });
+  // 循环长度 / 网格变化后同步刷新实时编曲视图
+  ['loopBars','loopToggle'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('change',()=>{if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});
+  });
   document.addEventListener('input',e=>{if(e.target&&e.target.id&&e.target.id.indexOf('p_')===0)auto();});
   document.addEventListener('change',e=>{if(e.target&&e.target.id&&e.target.id.indexOf('p_')===0)auto();});
 })();
@@ -2401,10 +3081,17 @@ function drawSpectrum(){if(!masterAnalyser)return;const c=document.getElementByI
 // ========================= EVENTS =========================
 window.addEventListener('keydown',e=>{if(e.repeat)return;const map={q:'kick',w:'snare',e:'closedHat',r:'openHat',t:'clap',y:'tom',u:'crash'};if(map[e.key.toLowerCase()]&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){triggerDrum(map[e.key.toLowerCase()]);const b=document.querySelector(`.drum-pad[data-drum="${map[e.key.toLowerCase()]}"]`);b?.classList.add('active');setTimeout(()=>b?.classList.remove('active'),100)}});
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setCurrentTrack(b.dataset.track)));
-inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;const ev=k==='source'?'change':'input';e.addEventListener(ev,evt=>{const v=k==='source'?evt.target.value:Number(evt.target.value);trackParams[currentEditingTrack][k]=v;const out=document.getElementById('v_'+k);if(out)out.textContent=formatParam(k,v);initAudio();applyLiveTrackParams(currentEditingTrack)})});
+inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;const ev=k==='source'?'change':'input';e.addEventListener(ev,evt=>{const v=k==='source'?evt.target.value:Number(evt.target.value);trackParams[currentEditingTrack][k]=v;const out=document.getElementById('v_'+k);if(out)out.textContent=formatParam(k,v);initAudio();applyLiveTrackParams(currentEditingTrack);if(typeof drawCurves==='function')drawCurves();})});
+// 下拉类控件（滤波型等）也要重画曲线：统一再挂一次 change
+['p_source','p_filterType'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('change',()=>{if(typeof drawCurves==='function')drawCurves();});
+});
 document.getElementById('presetSelect').addEventListener('change',e=>{const key=e.target.value;if(key==='save_custom'){const n=prompt('为当前参数组合命名：');if(n){timbrePresets['usr_'+n]=JSON.parse(JSON.stringify(trackParams[currentEditingTrack]));const o=document.createElement('option');o.value='usr_'+n;o.text='👤 '+n;e.target.insertBefore(o,e.target.lastElementChild);alert('预设保存成功！')}}else if(timbrePresets[key]){Object.assign(trackParams[currentEditingTrack],timbrePresets[key]);syncInspectorUI();initAudio();applyLiveTrackParams(currentEditingTrack)}e.target.value=''});
 ['melody','chord','bass','drums'].forEach(t=>document.getElementById('vol_'+t).addEventListener('input',applyVolumes));
-document.getElementById('btnPlay').addEventListener('click',()=>{if(seqRunning&&playbackMode==='daw')stopSequence();else playDaw()});document.getElementById('btnStop').addEventListener('click',stopSequence);document.getElementById('btnStepPlay').addEventListener('click',()=>{if(seqRunning&&playbackMode==='step')stopSequence();else playStep()});document.getElementById('btnStepClear').addEventListener('click',clearStep);document.getElementById('btnUseDaw').addEventListener('click',()=>{playbackMode='daw';document.getElementById('btnUseDaw').classList.add('selected');document.getElementById('btnUseStep').classList.remove('selected');setTransport('待机 · DAW')});document.getElementById('btnUseStep').addEventListener('click',()=>{playbackMode='step';document.getElementById('btnUseStep').classList.add('selected');document.getElementById('btnUseDaw').classList.remove('selected');setTransport('待机 · STEP')});document.getElementById('btnMultiWrite').addEventListener('click',openMultiModal);document.getElementById('btnScoreImport').addEventListener('click',openScoreModal);
+document.getElementById('btnPlay').addEventListener('click',()=>{if(seqRunning&&playbackMode==='daw')stopSequence();else playDaw()});document.getElementById('btnStop').addEventListener('click',stopSequence);document.getElementById('btnStepPlay').addEventListener('click',()=>{if(seqRunning&&playbackMode==='step')stopSequence();else playStep()});document.getElementById('btnStepClear').addEventListener('click',clearStep);document.getElementById('btnUseDaw').addEventListener('click',()=>{playbackMode='daw';document.getElementById('btnUseDaw').classList.add('selected');document.getElementById('btnUseStep').classList.remove('selected');setTransport('待机 · DAW');if(typeof refreshRollData==='function')refreshRollData();});document.getElementById('btnUseStep').addEventListener('click',()=>{playbackMode='step';document.getElementById('btnUseStep').classList.add('selected');document.getElementById('btnUseDaw').classList.remove('selected');setTransport('待机 · STEP');if(typeof refreshRollData==='function')refreshRollData();});document.getElementById('btnMultiWrite').addEventListener('click',openMultiModal);document.getElementById('btnScoreImport').addEventListener('click',openScoreModal);
+const demoBtn=document.getElementById('btnDemoSong');
+if(demoBtn)demoBtn.addEventListener('click',()=>{applyDemoSong(true);if(typeof scheduleAutosave==='function')scheduleAutosave();});
 // ---- 读谱：文件选择 / 清洗 / 写入 ----
 document.getElementById('scoreCancel').addEventListener('click',closeScoreModal);
 document.getElementById('scoreModal').addEventListener('click',e=>{if(e.target.id==='scoreModal')closeScoreModal();});
@@ -2416,8 +3103,15 @@ document.getElementById('scoreClean').addEventListener('click',()=>{
   if(r.meta.key)bits.push('调号 '+String(r.meta.key).toUpperCase());
   if(r.meta.bpm)bits.push('速度 '+r.meta.bpm);
   if(r.meta.meter)bits.push('拍号 '+r.meta.meter);
+  const st=r.meta.stats||{};
+  const rb=[];
+  if(st.eighth)rb.push('八分 '+st.eighth);
+  if(st.sixteenth)rb.push('十六分 '+st.sixteenth);
+  if(st.dot)rb.push('附点 '+st.dot);
+  if(rb.length)bits.push('节奏 '+rb.join('/'));
+  else if(st.notes)bits.push('未识别到减时线（全按四分音符）');
   document.getElementById('scoreMeta').textContent=bits.join(' · ');
-  setScoreStatus(r.text?'已清洗，可手动修正':'没有识别到音符');
+  setScoreStatus(r.text?'已清洗（含节奏），可手动修正':'没有识别到音符');
 });
 document.getElementById('scoreText').addEventListener('change',e=>{
   const f=e.target.files&&e.target.files[0];if(!f)return;
@@ -2453,8 +3147,48 @@ document.getElementById('scoreApply').addEventListener('click',()=>{
   closeScoreModal();
   if(document.getElementById('scorePlay').checked)playDaw();
 });
-document.getElementById('stepResolution').addEventListener('change',()=>{stepResolution=getStepResolution();stepLoopLength=STEP_COUNT*stepResolution;if(seqRunning&&playbackMode==='step')playStep()});document.getElementById('keySelect').addEventListener('change',()=>{lastChordNotes=[];updateChords();buildStepGrid();renderKeyboardLabels()});document.getElementById('showSolfege').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-solfege',!e.target.checked));document.getElementById('showNoteName').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-notename',!e.target.checked));
-document.getElementById('loopToggle').addEventListener('change',()=>{});/* bpmSlider 与 stepBpmSlider 已统一绑定到 applyBpm()，两处 BPM 实时同步 */document.getElementById('metronomeToggle').addEventListener('change',restartMetronome);document.getElementById('btnMetroTest').addEventListener('click',()=>{initAudio();playMetroClick(true)});['timeNum','timeDen'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{updateMetroText();if(document.getElementById('metronomeToggle').checked)restartMetronome()}));document.getElementById('chordPlayStyle').addEventListener('change',stopChordPerformance);document.getElementById('btnCustomChord').addEventListener('click',()=>{
+document.getElementById('stepResolution').addEventListener('change',()=>{stepResolution=getStepResolution();stepLoopLength=STEP_COUNT*stepResolution;if(seqRunning&&playbackMode==='step')playStep();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});document.getElementById('keySelect').addEventListener('change',()=>{lastChordNotes=[];updateChords();buildStepGrid();renderKeyboardLabels();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});document.getElementById('showSolfege').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-solfege',!e.target.checked));document.getElementById('showNoteName').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-notename',!e.target.checked));
+document.getElementById('loopToggle').addEventListener('change',()=>{if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});/* bpmSlider 与 stepBpmSlider 已统一绑定到 applyBpm()，两处 BPM 实时同步 */document.getElementById('metronomeToggle').addEventListener('change',restartMetronome);document.getElementById('btnMetroTest').addEventListener('click',()=>{initAudio();playMetroClick(true)});['timeNum','timeDen'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{updateMetroText();if(document.getElementById('metronomeToggle').checked)restartMetronome()}));document.getElementById('chordPlayStyle').addEventListener('change',stopChordPerformance);
+// 琶音速度 / 快慢：正在播放时立即按新速度重启；并随工程一起保存
+document.getElementById('arpRate').addEventListener('change',updateArpTimer);
+(function bindArpSpeed(){
+  const el=document.getElementById('arpSpeed');if(!el)return;
+  el.addEventListener('input',()=>{syncArpSpeedLabel();updateArpTimer();if(typeof scheduleAutosave==='function')scheduleAutosave();});
+  el.addEventListener('change',()=>{if(typeof scheduleAutosave==='function')scheduleAutosave();});
+})();
+// DAW 轨2和弦的琶音设置
+['dawChordArp','dawChordArpRate'].forEach(id=>{
+  const el=document.getElementById(id);if(!el)return;
+  el.addEventListener('change',()=>{
+    if(typeof requestLiveSequenceRefresh==='function')requestLiveSequenceRefresh();
+    if(typeof scheduleAutosave==='function')scheduleAutosave();
+  });
+});
+// ---- 自定义和弦进行 / 播放一遍 ----
+(function bindProgressionExtras(){
+  const saveBtn=document.getElementById('btnCustomProgSave');
+  const input=document.getElementById('customProgInput');
+  const status=document.getElementById('customProgStatus');
+  const doSave=()=>{
+    if(!input)return;
+    const degrees=parseProgressionInput(input.value);
+    if(!degrees){alert('没看懂这个进行。请用 1～7 的数字或 I / ii / iii / IV / V / vi / vii° 级数，例如：1 5 6 4  或  I-V-vi-IV');return}
+    customProgressions.push({degrees,text:progressionDegreeText(degrees)});
+    if(customProgressions.length>8)customProgressions.shift();
+    saveCustomProgressions();
+    renderCustomProgressionButtons();
+    const key='custom_'+(customProgressions.length-1);
+    applyChordProgressionToDaw(key,true);
+    input.value='';
+  };
+  if(saveBtn)saveBtn.addEventListener('click',doSave);
+  if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doSave()}});
+  const once=document.getElementById('btnProgPlayOnce');
+  if(once)once.addEventListener('click',()=>playProgressionOnce('daw'));
+  const stepOnce=document.getElementById('btnStepProgPlayOnce');
+  if(stepOnce)stepOnce.addEventListener('click',()=>playProgressionOnce('step'));
+})();
+document.getElementById('btnCustomChord').addEventListener('click',()=>{
  const choice=prompt('请输入要自定义的级数：1=I，2=ii，3=iii，4=IV，5=V，6=vi，7=vii°','1');
  const idx=Math.max(0,Math.min(6,Number(choice)-1));
  if(Number.isFinite(idx))openCustomChordModal(idx);
@@ -2504,7 +3238,7 @@ function initNewControls(){
   const v=mb?mb.value:120;
   if(sb)sb.value=v;
   ['bpmVal','stepBpmVal'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=v});
-  updateTransposeUI();updateStripStatus();setBend(0);
+  updateTransposeUI();updateStripStatus();setBend(0);syncArpSpeedLabel();
 }
 // 滑块填充效果：让轨道左侧显示已选中的比例（纯视觉）。
 function paintRange(el){
@@ -2516,7 +3250,15 @@ function paintRange(el){
 function paintAllRanges(){document.querySelectorAll('input[type=range]').forEach(paintRange)}
 document.addEventListener('input',e=>{if(e.target&&e.target.type==='range')paintRange(e.target)});
 document.addEventListener('change',e=>{if(e.target&&e.target.type==='range')paintRange(e.target)});
-window.addEventListener('load',()=>{initKeyboard();buildStepGrid();updateChords();syncInspectorUI();updateMetroText();bindProgressionButtons();initNewControls();paintAllRanges();restoreLastProject();setTransport('待机 · DAW')});
+window.addEventListener('load',()=>{initKeyboard();buildStepGrid();updateChords();syncInspectorUI();updateMetroText();bindProgressionButtons();initNewControls();paintAllRanges();restoreLastProject();setTransport('待机 · DAW');
+  try{
+    loadCustomProgressions();renderCustomProgressionButtons();
+    buildSoloMuteButtons();renderRollToggles();refreshRollData();drawCurves();
+    const st=document.getElementById('customProgStatus');
+    if(st)st.textContent='当前：'+(lastChordProgKey&&COMMON_PROGRESSIONS[lastChordProgKey]?progressionDegreeText(COMMON_PROGRESSIONS[lastChordProgKey]):'未选择');
+  }catch(e){console.error('附加面板初始化失败',e)}
+});
+window.addEventListener('resize',()=>{drawCurves&&drawCurves();drawRoll&&drawRoll();});
 </script>
 
 <script>
