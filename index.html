@@ -715,6 +715,48 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
  .synth-container{padding:18px}
  .curve-panel{grid-template-columns:1fr}
 }
+/* ================= 横屏适配（安卓 / iOS 通用）=================
+   手机横屏的特点是"宽而矮"：宽度够（700~950px），但可用高度只有 320~480px。
+   只按宽度做断点的话，横屏会命中"平板样式"，结果每个模块都很高，
+   要滚很久才看得到键盘。这里按"矮屏横屏"单独压一遍纵向尺寸。
+   注意：用 max-height 而不是 orientation，因为部分安卓机（分屏/折叠屏）横屏时高度也很大。 */
+@media (orientation:landscape) and (max-height:620px){
+ body{padding:6px 8px;min-height:0}
+ .synth-container{padding:10px 12px;gap:9px;border-radius:14px}
+ .header{padding-bottom:7px;gap:8px}
+ .main-title{font-size:17px;letter-spacing:1px}
+ .header .sub,.header .tagline{display:none}
+ .module{padding:9px 11px;border-radius:11px}
+ .module-title{font-size:12.5px;margin-bottom:7px}
+ .layout-top{gap:9px}
+ /* 横屏时把 DAW 与通道条并排放，省掉一大截纵向空间 */
+ .layout-top{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)!important}
+ .daw-track{min-height:26px}
+ .daw-lane{font-size:8.5px}
+ .curve-box canvas{height:96px}
+ .roll-canvas{height:120px}
+ .chords-grid{grid-template-columns:repeat(4,1fr);gap:6px}
+ .chord-card{min-height:52px;padding:6px 4px}
+ .step-grid{grid-template-columns:96px repeat(16,50px)}
+ .piano-wrapper{padding:7px 10px}
+ .teach-tabs{gap:4px}
+ .teach-tab{padding:3px 8px;font-size:10px}
+ .hist-float{bottom:calc(8px + env(safe-area-inset-bottom));right:calc(8px + env(safe-area-inset-right))}
+ .hist-fab{min-width:52px;height:38px;font-size:15px}
+ .master-meter{height:26px}
+ .transport-bar{gap:6px;flex-wrap:nowrap}
+ .mode-btn{min-width:96px;padding:6px 8px;font-size:11px}
+}
+/* 极矮横屏（分屏 / 小屏手机横放）再压一档 */
+@media (orientation:landscape) and (max-height:430px){
+ .curve-box canvas{height:74px}
+ .roll-canvas{height:96px}
+ .chords-grid{grid-template-columns:repeat(7,1fr)}
+ .chord-card{min-height:44px}
+ .step-grid{grid-template-columns:88px repeat(16,42px)}
+ .header{padding-bottom:4px}
+ .main-title{font-size:15px}
+}
 @media(max-width:650px){
  body{padding:7px}
  .synth-container{padding:11px;border-radius:14px}
@@ -731,6 +773,15 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
  .progression-btn{min-height:38px;padding:8px 10px}
  .progression-buttons{gap:6px}
 }
+.samp-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 9px;padding:6px 8px;border-radius:8px;background:rgba(0,176,255,.07);border:1px solid rgba(0,176,255,.22)}
+.samp-sw{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-main);cursor:pointer;white-space:nowrap}
+.samp-sw input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex:0 0 14px}
+.samp-st{flex:1;min-width:96px;font-size:10.5px;color:var(--text-muted);line-height:1.35}
+.samp-st b{color:var(--accent)}
+.samp-st .warn{color:#ffb74d}
+.samp-btn{font-size:10.5px;padding:3px 8px;border-radius:6px;border:1px solid rgba(0,176,255,.35);background:rgba(0,176,255,.12);color:var(--text-main);cursor:pointer;white-space:nowrap}
+.samp-btn:hover{background:rgba(0,176,255,.22)}
+.samp-btn:disabled{opacity:.5;cursor:default}
 </style>
 </head>
 <body>
@@ -876,7 +927,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
       <h3 class="module-title">独立通道条 (Channel Strip) <span class="help-btn" onclick="showHelp('STRIP')">❓</span></h3>
       <div class="inspector-header"><div class="inspector-tabs"><button class="tab active" data-track="melody">轨1 [旋律]</button><button class="tab" data-track="chord">轨2 [和弦]</button><button class="tab" data-track="bass">轨3 [贝斯]</button><button class="tab" data-track="drums">轨4 [鼓组]</button></div><div class="strip-tools"><button id="btnParamZero" class="btn small" title="把 EQ / 失真 / 合唱 / 延迟 / 混响 / 声像 / ADSR 全部归零，只保留当前振荡器音色">🧹 参数清零</button><button id="btnParamReset" class="btn small" title="恢复当前轨道的出厂默认参数">↺ 参数重置</button><button id="btnParamResetAll" class="btn small" title="恢复全部四条轨道的出厂默认参数">↺ 全部重置</button><span id="stripStatus" class="status-pill"></span></div><select id="presetSelect" class="styled-sel"><option value="">✨ 选择音色预设...</option><option value="citypop">City Pop 电钢</option><option value="funkbass">Funk 合成贝斯</option><option value="shoegaze">Shoegaze 音墙</option><option value="jazzlead">爵士 R&B Lead</option><option value="drumkit">Acoustic Drum Kit</option><option value="save_custom">💾 保存当前为预设</option></select></div>
       <div class="inspector-grid">
-        <div class="param-group"><h4>OSC & FILTER</h4><select id="p_source" class="styled-sel" style="width:100%;margin-bottom:10px"><optgroup label="基础波形"><option value="sawtooth">锯齿波 (Sawtooth)</option><option value="square">方波 (Square)</option><option value="triangle">三角波 (Triangle)</option><option value="sine">正弦波 (Sine)</option></optgroup><optgroup label="键盘乐器"><option value="piano">🎹 三角钢琴 Piano</option><option value="epiano">🎹 电钢琴 Rhodes EP</option><option value="organ">⛪ 管风琴 Organ</option><option value="clav">🎹 古钢琴 Clavinet</option></optgroup><optgroup label="旋律打击乐器"><option value="marimba">🎼 马林巴 Marimba</option><option value="bell">🔔 钟琴 Glockenspiel</option><option value="musicbox">🎵 音乐盒 Music Box</option></optgroup><optgroup label="弦乐"><option value="violin">🎻 小提琴 Violin</option><option value="cello">🎻 大提琴 Cello</option><option value="erhu">🎻 二胡 Erhu</option><option value="harp">🎼 竖琴 Harp</option><option value="pizzicato">🎻 拨弦 Pizzicato</option></optgroup><optgroup label="吉他与弹拨"><option value="guitar">🎸 民谣吉他 Steel Guitar</option><option value="nylonguitar">🎸 尼龙吉他 Nylon Guitar</option><option value="guzheng">🎼 古筝 Guzheng</option></optgroup><optgroup label="贝斯"><option value="contrabass">🎻 低音提琴 Contrabass</option><option value="ebass">🎸 电贝斯 Electric Bass</option><option value="synthbass">🎛 合成贝斯 Synth Bass</option></optgroup><optgroup label="管乐"><option value="flute">🎶 长笛 Flute</option><option value="clarinet">🎷 单簧管 Clarinet</option><option value="sax">🎷 中音萨克斯 Alto Sax</option><option value="trumpet">🎺 小号 Trumpet</option></optgroup><optgroup label="其他"><option value="choir">🎤 人声合唱 Choir</option><option value="accordion">🎹 手风琴 Accordion</option><option value="drumkit">🥁 鼓组 Drum Kit</option></optgroup></select><div class="wave-scope" id="waveScope" style="display:none"><div class="wave-scope-box"><div class="ws-title">时域波形 <i id="wsTimeInfo"></i></div><canvas id="wsTimeCanvas"></canvas></div><div class="wave-scope-box"><div class="ws-title">频域谐波 <i id="wsFreqInfo"></i></div><canvas id="wsFreqCanvas"></canvas></div><div class="ws-note" id="wsNote" style="grid-column:1/-1;margin-top:0"></div></div><div class="row"><span>滤波型</span><select id="p_filterType" class="styled-sel" style="flex:1;margin:0 6px;padding:3px 6px;font-size:11px"><option value="lowpass">低通 LP</option><option value="highpass">高通 HP</option><option value="bandpass">带通 BP</option><option value="notch">陷波 Notch</option></select></div><div class="row"><span>Cutoff</span><input type="range" id="p_cutoff" min="0" max="1000" step="1"><span id="v_cutoff" class="val-box"></span></div><div class="row"><span>Reso</span><input type="range" id="p_resonance" min="0" max="20" step=".1"><span id="v_resonance" class="val-box"></span></div><h4 style="margin-top:10px">音源特性 (乐器音色微调)</h4><div class="row"><span>明亮度</span><input type="range" id="p_bright" min="0" max="1" step=".01"><span id="v_bright" class="val-box"></span></div><div class="row"><span>延音</span><input type="range" id="p_damp" min="0" max="1" step=".01"><span id="v_damp" class="val-box"></span></div><div class="row"><span>颤音</span><input type="range" id="p_vibrato" min="0" max="1" step=".01"><span id="v_vibrato" class="val-box"></span></div><h4 style="margin-top:10px">ADSR</h4><div class="row"><span>A</span><input type="range" id="p_attack" min=".001" max="2" step=".01"><span id="v_attack" class="val-box"></span></div><div class="row"><span>D</span><input type="range" id="p_decay" min=".01" max="2" step=".01"><span id="v_decay" class="val-box"></span></div><div class="row"><span>S</span><input type="range" id="p_sustain" min="0" max="1" step=".01"><span id="v_sustain" class="val-box"></span></div><div class="row"><span>R</span><input type="range" id="p_release" min=".01" max="3.5" step=".01"><span id="v_release" class="val-box"></span></div><div class="adsr-tip">S = 按住时保持的音量；R = 松键后尾音拖多久（不再被音符时值吃掉）</div><div class="curve-box compact"><div class="curve-title">ADSR 包络 <span id="curveAdsrInfo"></span></div><canvas id="adsrCanvas"></canvas><div class="curve-foot"><button id="btnAdsrAudition" class="btn small">▶ 试听包络</button><span class="curve-hint">按当前 A / D / S / R 弹一个音</span></div></div></div>
+        <div class="param-group"><h4>OSC & FILTER</h4><select id="p_source" class="styled-sel" style="width:100%;margin-bottom:10px"><optgroup label="基础波形"><option value="sawtooth">锯齿波 (Sawtooth)</option><option value="square">方波 (Square)</option><option value="triangle">三角波 (Triangle)</option><option value="sine">正弦波 (Sine)</option></optgroup><optgroup label="键盘乐器"><option value="piano">🎹 三角钢琴 Piano</option><option value="epiano">🎹 电钢琴 Rhodes EP</option><option value="organ">⛪ 管风琴 Organ</option><option value="clav">🎹 古钢琴 Clavinet</option></optgroup><optgroup label="旋律打击乐器"><option value="marimba">🎼 马林巴 Marimba</option><option value="bell">🔔 钟琴 Glockenspiel</option><option value="musicbox">🎵 音乐盒 Music Box</option></optgroup><optgroup label="弦乐"><option value="violin">🎻 小提琴 Violin</option><option value="cello">🎻 大提琴 Cello</option><option value="erhu">🎻 二胡 Erhu</option><option value="harp">🎼 竖琴 Harp</option><option value="pizzicato">🎻 拨弦 Pizzicato</option></optgroup><optgroup label="吉他与弹拨"><option value="guitar">🎸 民谣吉他 Steel Guitar</option><option value="nylonguitar">🎸 尼龙吉他 Nylon Guitar</option><option value="guzheng">🎼 古筝 Guzheng</option></optgroup><optgroup label="贝斯"><option value="contrabass">🎻 低音提琴 Contrabass</option><option value="ebass">🎸 电贝斯 Electric Bass</option><option value="synthbass">🎛 合成贝斯 Synth Bass</option></optgroup><optgroup label="管乐"><option value="flute">🎶 长笛 Flute</option><option value="clarinet">🎷 单簧管 Clarinet</option><option value="sax">🎷 中音萨克斯 Alto Sax</option><option value="trumpet">🎺 小号 Trumpet</option></optgroup><optgroup label="其他"><option value="choir">🎤 人声合唱 Choir</option><option value="accordion">🎹 手风琴 Accordion</option><option value="drumkit">🥁 鼓组 Drum Kit</option></optgroup></select><div class="samp-bar" id="sampBar"><label class="samp-sw"><input type="checkbox" id="sampEngine" checked> 真实采样音色</label><span class="samp-st" id="sampState">—</span><button class="samp-btn" id="sampPreload" type="button">⬇ 预载常用</button></div><div class="wave-scope" id="waveScope" style="display:none"><div class="wave-scope-box"><div class="ws-title">时域波形 <i id="wsTimeInfo"></i></div><canvas id="wsTimeCanvas"></canvas></div><div class="wave-scope-box"><div class="ws-title">频域谐波 <i id="wsFreqInfo"></i></div><canvas id="wsFreqCanvas"></canvas></div><div class="ws-note" id="wsNote" style="grid-column:1/-1;margin-top:0"></div></div><div class="row"><span>滤波型</span><select id="p_filterType" class="styled-sel" style="flex:1;margin:0 6px;padding:3px 6px;font-size:11px"><option value="lowpass">低通 LP</option><option value="highpass">高通 HP</option><option value="bandpass">带通 BP</option><option value="notch">陷波 Notch</option></select></div><div class="row"><span>Cutoff</span><input type="range" id="p_cutoff" min="0" max="1000" step="1"><span id="v_cutoff" class="val-box"></span></div><div class="row"><span>Reso</span><input type="range" id="p_resonance" min="0" max="20" step=".1"><span id="v_resonance" class="val-box"></span></div><h4 style="margin-top:10px">音源特性 (乐器音色微调)</h4><div class="row"><span>明亮度</span><input type="range" id="p_bright" min="0" max="1" step=".01"><span id="v_bright" class="val-box"></span></div><div class="row"><span>延音</span><input type="range" id="p_damp" min="0" max="1" step=".01"><span id="v_damp" class="val-box"></span></div><div class="row"><span>颤音</span><input type="range" id="p_vibrato" min="0" max="1" step=".01"><span id="v_vibrato" class="val-box"></span></div><h4 style="margin-top:10px">ADSR</h4><div class="row"><span>A</span><input type="range" id="p_attack" min=".001" max="2" step=".01"><span id="v_attack" class="val-box"></span></div><div class="row"><span>D</span><input type="range" id="p_decay" min=".01" max="2" step=".01"><span id="v_decay" class="val-box"></span></div><div class="row"><span>S</span><input type="range" id="p_sustain" min="0" max="1" step=".01"><span id="v_sustain" class="val-box"></span></div><div class="row"><span>R</span><input type="range" id="p_release" min=".01" max="3.5" step=".01"><span id="v_release" class="val-box"></span></div><div class="adsr-tip">S = 按住时保持的音量；R = 松键后尾音拖多久（不再被音符时值吃掉）</div><div class="curve-box compact"><div class="curve-title">ADSR 包络 <span id="curveAdsrInfo"></span></div><canvas id="adsrCanvas"></canvas><div class="curve-foot"><button id="btnAdsrAudition" class="btn small">▶ 试听包络</button><span class="curve-hint">按当前 A / D / S / R 弹一个音</span></div></div></div>
         <div class="param-group"><h4>EQ & SATURATION</h4><div class="row"><span>High</span><input type="range" id="p_eqHigh" min="-15" max="15" step=".5"><span id="v_eqHigh" class="val-box"></span></div><div class="row"><span>Low</span><input type="range" id="p_eqLow" min="-15" max="15" step=".5"><span id="v_eqLow" class="val-box"></span></div><div class="row"><span>Drive</span><input type="range" id="p_distDrive" min="0" max="100" step="1"><span id="v_distDrive" class="val-box"></span></div><div class="curve-box compact"><div class="curve-title">EQ / 滤波频响 <span id="curveEqInfo"></span></div><canvas id="eqCanvas"></canvas></div><h4 style="margin-top:10px">CHORUS FX</h4><div class="row"><span>Mix</span><input type="range" id="p_chorusMix" min="0" max="1" step=".05"><span id="v_chorusMix" class="val-box"></span></div><div class="row"><span>Rate</span><input type="range" id="p_chorusRate" min=".1" max="10" step=".1"><span id="v_chorusRate" class="val-box"></span></div></div>
         <div class="param-group"><h4>ADVANCED (合成/吉他)</h4><div class="row"><span>八度</span><input type="range" id="p_octave" min="-2" max="2" step="1"><span id="v_octave" class="val-box"></span></div><div class="row"><span>叠加</span><input type="range" id="p_unison" min="0" max="1" step=".25"><span id="v_unison" class="val-box"></span></div><div class="row"><span>Sub低八</span><input type="range" id="p_sub" min="0" max="1" step=".05"><span id="v_sub" class="val-box"></span></div><div class="row"><span>滑音</span><input type="range" id="p_glide" min="0" max=".5" step=".01"><span id="v_glide" class="val-box"></span></div><div class="row"><span>滤波包络</span><input type="range" id="p_filterEnv" min="-1" max="1" step=".05"><span id="v_filterEnv" class="val-box"></span></div><div class="row"><span>Tone</span><input type="range" id="p_driveTone" min="0" max="1" step=".05"><span id="v_driveTone" class="val-box"></span></div><div class="row"><span>压缩</span><input type="range" id="p_compress" min="0" max="1" step=".05"><span id="v_compress" class="val-box"></span></div><div class="row"><span>音量颤音</span><input type="range" id="p_tremolo" min="0" max="1" step=".05"><span id="v_tremolo" class="val-box"></span></div><div class="row"><span>颤音速率</span><input type="range" id="p_tremoloRate" min=".5" max="14" step=".5"><span id="v_tremoloRate" class="val-box"></span></div></div>
         <div class="param-group"><h4>SPATIAL (空间)</h4><div class="row"><span>DlyTime</span><input type="range" id="p_delayTime" min=".05" max="1" step=".05"><span id="v_delayTime" class="val-box"></span></div><div class="row"><span>DlyMix</span><input type="range" id="p_delayMix" min="0" max="1" step=".05"><span id="v_delayMix" class="val-box"></span></div><div class="row"><span>RevMix</span><input type="range" id="p_reverbMix" min="0" max="1" step=".05"><span id="v_reverbMix" class="val-box"></span></div><div class="row"><span>Pan</span><input type="range" id="p_pan" min="-1" max="1" step=".05"><span id="v_pan" class="val-box"></span></div></div>
@@ -984,7 +1035,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
 // ========================= DATA =========================
 const ADVANCED_DEFAULTS={filterType:'lowpass',filterEnv:0,octave:0,unison:0,sub:0,glide:0,driveTone:.65,compress:0,tremolo:0,tremoloRate:5};
 const trackParams={
- melody:{source:'sawtooth',bright:.55,damp:.5,vibrato:0,attack:.05,decay:.3,sustain:.7,release:.8,cutoff:6000,resonance:1,eqLow:0,eqHigh:4,distDrive:0,chorusMix:0,chorusRate:2,pan:0,delayTime:.3,delayMix:.25,reverbMix:.18,...ADVANCED_DEFAULTS},
+ melody:{source:'piano',bright:.55,damp:.5,vibrato:0,attack:.006,decay:.55,sustain:.24,release:1.1,cutoff:7000,resonance:.7,eqLow:0,eqHigh:4,distDrive:0,chorusMix:0,chorusRate:2,pan:0,delayTime:.3,delayMix:.25,reverbMix:.18,...ADVANCED_DEFAULTS},
  chord:{source:'guitar',bright:.55,damp:.6,vibrato:0,attack:.01,decay:1,sustain:.3,release:1.5,cutoff:4000,resonance:1,eqLow:-2,eqHigh:2,distDrive:0,chorusMix:.3,chorusRate:1.5,pan:0,delayTime:.4,delayMix:0,reverbMix:.3,...ADVANCED_DEFAULTS},
  bass:{source:'ebass',bright:.5,damp:.4,vibrato:0,attack:.03,decay:.2,sustain:.8,release:.4,cutoff:800,resonance:2,eqLow:6,eqHigh:0,distDrive:15,chorusMix:0,chorusRate:1,pan:0,delayTime:.3,delayMix:0,reverbMix:0,...ADVANCED_DEFAULTS},
  drums:{source:'drumkit',bright:.5,damp:.3,vibrato:0,attack:.001,decay:.1,sustain:.7,release:.08,cutoff:11000,resonance:.5,eqLow:2,eqHigh:3,distDrive:0,chorusMix:.02,chorusRate:2,pan:0,delayTime:.12,delayMix:0,reverbMix:.06,...ADVANCED_DEFAULTS}
@@ -999,30 +1050,55 @@ const NEUTRAL_TRACK_PARAMS={eqLow:0,eqHigh:0,distDrive:0,chorusMix:0,delayMix:0,
 //       bow=弓弦 / wind=木管 / brass=铜管（基础波形 + 共振峰 + 起音特征）
 // gain 为逐乐器实测后的响度补偿，让所有音源落在同一电平上，避免切换乐器时忽大忽小或削顶。
 const INSTRUMENT_SPECS={
- piano:      {type:'add',gain:.54,partials:[[1,1,'triangle'],[2,.42,'sine'],[3,.2,'sine'],[4,.1,'sine']],decayRamp:.16,hammer:.05},
- epiano:     {type:'fm',gain:.72,ratio:2,index:230,indexDecay:.55},
+/* 每种乐器的"琴体 / 腔体"共振峰是音色的身份证 —— 同样是锯齿波，
+   套上小提琴的三个峰就像小提琴，套上大提琴的就像大提琴。
+   follow 表示峰值随音高轻微移动的比例（0 = 完全固定）。 */
+ piano:      {type:'add',gain:.54,partials:[[1,1,'triangle'],[2,.44,'sine'],[3,.2,'sine'],[4,.11,'sine'],[5,.05,'sine'],[6,.03,'sine']],
+              inharm:.0004,decayRamp:.16,hammer:.05,
+              formants:[{f:120,q:.9,gain:4,follow:.1},{f:480,q:1.1,gain:3,follow:.15}]},
+ epiano:     {type:'fm',gain:.62,ratio:2,index:230,indexDecay:.55,strike:.09,
+              formants:[{f:900,q:1.1,gain:4,follow:.2},{f:2600,q:1.4,gain:5,follow:.2}]},
  organ:      {type:'add',gain:0.31,partials:[[1,1,'sine'],[2,.72,'sine'],[3,.46,'sine'],[4,.3,'sine'],[6,.2,'sine']]},
- clav:       {type:'ks',gain:3.1,bright:.85,damp:.982,len:1.6},
+ clav:       {type:'ks',gain:2.6,bright:.85,damp:.982,len:1.6,
+              formants:[{f:700,q:2.6,gain:9,follow:.1},{f:2400,q:2.2,gain:8,follow:.1}]},
  bell:       {type:'fm',gain:.63,ratio:3.5,index:900,indexDecay:1.8},
- marimba:    {type:'fm',gain:.75,ratio:4,index:420,indexDecay:.25,decayRamp:.45},
- musicbox:   {type:'fm',gain:.80,ratio:5.5,index:340,indexDecay:.9},
- violin:     {type:'bow',gain:0.33,wave:'sawtooth',formant:2800,q:1.1,fGain:9,attack:.13,vib:.45},
- cello:      {type:'bow',gain:0.47,wave:'sawtooth',formant:1150,q:1.3,fGain:9,attack:.2,vib:.38},
- erhu:       {type:'bow',gain:0.49,wave:'sawtooth',formant:1500,q:3.2,fGain:12,attack:.16,vib:.85},
- harp:       {type:'ks',gain:2.8,bright:.5,damp:.9965,len:2.6},
- pizzicato:  {type:'ks',gain:4.4,bright:.55,damp:.978,len:1.1},
- guitar:     {type:'ks',gain:2.4,bright:.62,damp:.9955,len:2.6},
- nylonguitar:{type:'ks',gain:3.5,bright:.34,damp:.994,len:2.4},
- guzheng:    {type:'ks',gain:2.1,bright:.72,damp:.9972,len:3},
- flute:      {type:'wind',gain:.66,wave:'sine',breath:.10,attack:.07,vib:.25,formant:2000,q:.8,fGain:6},
- clarinet:   {type:'wind',gain:.38,wave:'square',breath:.02,attack:.05,vib:.12,formant:1250,q:1.4,fGain:8},
- sax:        {type:'wind',gain:0.45,wave:'sawtooth',breath:.05,attack:.06,vib:.5,formant:950,q:2.2,fGain:10},
- trumpet:    {type:'brass',gain:.66,wave:'sawtooth',attack:.045,vib:.18,openRamp:.22},
- choir:      {type:'add',gain:.47,partials:[[1,1,'sine'],[2,.5,'sine'],[3,.26,'sine']],attack:.22,vib:.45,formant:780,q:2.5,fGain:8},
- accordion:  {type:'add',gain:.56,partials:[[1,1,'sawtooth'],[1.006,.65,'sawtooth'],[2,.22,'sawtooth']],attack:.04,vib:.14},
+ marimba:    {type:'fm',gain:.72,ratio:4,index:420,indexDecay:.25,decayRamp:.45,strike:.05,
+              formants:[{f:250,q:1.4,gain:5,follow:.25},{f:900,q:1.2,gain:4,follow:.25}]},
+ musicbox:   {type:'fm',gain:.78,ratio:5.5,index:340,indexDecay:.9,strike:.04,
+              formants:[{f:1800,q:1.6,gain:5,follow:.2}]},
+ violin:     {type:'bow',gain:0.30,wave:'sawtooth',attack:.13,vib:.45,bowNoise:.15,
+              formants:[{f:3600,type:'lowpass',q:.7,follow:.55},{f:275,q:1.2,gain:7,follow:.08},{f:1000,q:1.0,gain:4,follow:.12},{f:2900,q:1.7,gain:9,follow:.1}]},
+ cello:      {type:'bow',gain:0.42,wave:'sawtooth',attack:.2,vib:.38,bowNoise:.13,
+              formants:[{f:2200,type:'lowpass',q:.7,follow:.5},{f:110,q:1.1,gain:6,follow:.06},{f:600,q:1.2,gain:5,follow:.1},{f:1450,q:1.5,gain:7,follow:.1}]},
+ erhu:       {type:'bow',gain:0.44,wave:'sawtooth',attack:.16,vib:.85,bowNoise:.2,
+              formants:[{f:3200,type:'lowpass',q:.8,follow:.5},{f:500,q:3.0,gain:9,follow:.08},{f:1200,q:2.5,gain:7,follow:.1},{f:3000,q:2.0,gain:6,follow:.1}]},
+ harp:       {type:'ks',gain:2.4,bright:.5,damp:.9965,len:2.6,
+              formants:[{f:160,q:1.0,gain:4,follow:.15},{f:620,q:1.3,gain:3,follow:.15}]},
+ pizzicato:  {type:'ks',gain:3.6,bright:.55,damp:.978,len:1.1,
+              formants:[{f:260,q:1.6,gain:6,follow:.08},{f:1100,q:1.4,gain:5,follow:.1}]},
+ guitar:     {type:'ks',gain:2.0,bright:.62,damp:.9955,len:2.6,
+              formants:[{f:100,q:1.1,gain:6,follow:.05},{f:200,q:1.4,gain:4,follow:.08},{f:420,q:1.2,gain:3,follow:.1}]},
+ nylonguitar:{type:'ks',gain:2.9,bright:.34,damp:.994,len:2.4,
+              formants:[{f:105,q:1.2,gain:5,follow:.05},{f:230,q:1.5,gain:3,follow:.08},{f:500,q:1.1,gain:2,follow:.1}]},
+ guzheng:    {type:'ks',gain:1.8,bright:.72,damp:.9972,len:3,
+              formants:[{f:150,q:1.3,gain:5,follow:.06},{f:400,q:1.6,gain:4,follow:.1},{f:1200,q:1.4,gain:5,follow:.12}]},
+ flute:      {type:'wind',gain:.62,wave:'sine',breath:.10,attack:.07,vib:.25,
+              formants:[{f:2000,q:.8,gain:5,follow:.25}]},
+ clarinet:   {type:'wind',gain:.36,wave:'square',breath:.02,attack:.05,vib:.12,
+              formants:[{f:1250,q:1.4,gain:8,follow:.12},{f:2500,q:1.6,gain:5,follow:.12}]},
+ sax:        {type:'wind',gain:0.42,wave:'sawtooth',breath:.05,attack:.06,vib:.5,
+              formants:[{f:600,q:1.6,gain:7,follow:.1},{f:1200,q:1.8,gain:6,follow:.1},{f:2000,q:1.5,gain:5,follow:.12}]},
+ trumpet:    {type:'brass',gain:.60,wave:'sawtooth',attack:.045,vib:.18,openRamp:.22,
+              formants:[{f:1200,q:1.3,gain:6,follow:.12},{f:2500,q:1.5,gain:6,follow:.12},{f:3500,q:1.6,gain:5,follow:.15}]},
+ choir:      {type:'add',gain:.44,partials:[[1,1,'sine'],[2,.5,'sine'],[3,.26,'sine']],attack:.22,vib:.45,
+              formants:[{f:780,q:2.5,gain:8,follow:.08},{f:1200,q:3.0,gain:6,follow:.08},{f:2800,q:2.2,gain:4,follow:.1}]},
+ accordion:  {type:'add',gain:.56,partials:[[1,1,'sawtooth'],[1.006,.65,'sawtooth'],[2,.22,'sawtooth']],attack:.04,vib:.14,
+              formants:[{f:900,q:1.1,gain:4,follow:.15},{f:2200,q:1.2,gain:3,follow:.15}]},
  // 贝斯：共振峰压低 + 起音更快，避免低音区糊成一团
- contrabass: {type:'bow',gain:.44,wave:'sawtooth',formant:420,q:1.5,fGain:10,attack:.055,vib:.16},
- ebass:      {type:'bow',gain:.52,wave:'sawtooth',formant:900,q:2.4,fGain:11,attack:.008,vib:.12},
+ contrabass: {type:'bow',gain:.40,wave:'sawtooth',attack:.055,vib:.16,bowNoise:.14,
+              formants:[{f:1100,type:'lowpass',q:.7,follow:.45},{f:70,q:1.0,gain:5,follow:.05},{f:220,q:1.3,gain:5,follow:.08},{f:520,q:1.5,gain:6,follow:.1}]},
+ ebass:      {type:'bow',gain:.46,wave:'sawtooth',attack:.008,vib:.12,bowNoise:.08,
+              formants:[{f:1600,type:'lowpass',q:.8,follow:.5},{f:200,q:1.4,gain:5,follow:.08},{f:800,q:1.8,gain:6,follow:.1},{f:2500,q:1.6,gain:5,follow:.12}]},
  synthbass:  {type:'add',gain:.46,partials:[[.5,.85,'sine'],[1,1,'sawtooth'],[2,.2,'square'],[3,.07,'sine']],attack:.006}
 };
 const BASIC_WAVE_GAIN={sawtooth:.58,square:.49,triangle:.76,sine:.68,drumkit:.7};
@@ -1435,25 +1511,98 @@ function getNoiseBuffer(){
   return noiseBuffer;
 }
 const ksCache=new Map();
+/* Karplus-Strong 拨弦：真实感主要来自三件事 ——
+   ① 激励不是纯噪声，而是带"拨弦位置"梳状陷波的噪声（决定音头厚薄）
+   ② 环路里除平均滤波外再加一级损耗低通，让高次谐波比低次衰减得更快（否则像风琴）
+   ③ 衰减随音高变化：高音本来就该比低音短，否则整片音听起来一样长，很假 */
 function buildKSSource(freq,t,key,bright,damp,seconds,midi){
-  // 拨弦类用缓存：同一个（乐器+音高+亮度+阻尼）组合只生成一次波形
-  const ck=key+'|'+midi+'|'+Math.round(bright*16)+'|'+Math.round(damp*500);
+  const ck=key+'|'+midi+'|'+Math.round(bright*16)+'|'+Math.round(damp*500)+'|'+Math.round((seconds||2.5)*10);
   let buf=ksCache.get(ck);
   if(!buf){
-    const sr=audioCtx.sampleRate,n=Math.floor(sr*(seconds||2.5)),period=Math.max(2,Math.round(sr/freq));
+    const sr=audioCtx.sampleRate;
+    const P=Math.max(2,Math.round(sr/freq));
+    const n=Math.floor(sr*(seconds||2.5));
     buf=audioCtx.createBuffer(1,n,sr);
     const d=buf.getChannelData(0);
-    let lp=0;
-    for(let i=0;i<period;i++){const w=Math.random()*2-1;lp+=(w-lp)*bright;d[i]=lp;}
-    for(let i=period;i<n;i++)d[i]=damp*.5*(d[i-period]+d[i-period+1]);
-    const fade=Math.floor(n*.12);
+    // ① 激励：噪声经一阶低通（亮度）后，再做梳状滤波模拟拨弦位置
+    const pick=Math.max(1,Math.floor(P*0.19));
+    const ex=new Float32Array(P+pick+2);
+    let lp=0;const b=Math.max(.05,Math.min(1,bright));
+    for(let i=0;i<ex.length;i++){const w=Math.random()*2-1;lp+=(w-lp)*b;ex[i]=lp;}
+    for(let i=ex.length-1;i>=pick;i--)ex[i]-=ex[i-pick]*.7;
+    for(let i=0;i<P;i++)d[i]=ex[i];
+    // ② 环路：平均滤波 + 损耗低通；③ 高音衰减更快
+    const hi=Math.max(0,Math.min(1,(freq-160)/1100));     // 0(低音) → 1(高音)
+    const loss=Math.max(.04,Math.min(.55,.05+hi*.34));    // 损耗越大高频消失越快
+    /* 关键修正：spec.damp 原来是"每样本"衰减系数，但真实弦的衰减是按时间的。
+       每样本乘 0.9955、而一个周期有 300+ 个样本时，吉他音会在 0.05 秒内就衰减干净 ——
+       听上去就是"咔"一下然后只剩包络尾巴，这正是拨弦音色难听的根因。
+       这里把 damp 解释成"衰减快慢"，先换算成响度降到 -60dB 的时间 T60，
+       再反推每样本系数，这样低音能持续 2 秒、高音自然短一些。 */
+    const x=Math.max(0,Math.min(1,((damp==null?.995:damp)-.97)/.03));
+    const t60=Math.max(.14,(.18+x*x*3.6)*(1-hi*.42));
+    const dmpPerSample=Math.pow(10,-3/(t60*sr));
+    let y=0;
+    for(let i=P;i<n;i++){
+      const s=.5*(d[i-P]+d[i-P+1]);
+      y=s*(1-loss)+y*loss;
+      d[i]=dmpPerSample*y;
+    }
+    // 归一化 + 尾部淡出（避免爆音和拖尾突然截断）
+    let peak=0;for(let i=0;i<n;i++){const a=Math.abs(d[i]);if(a>peak)peak=a;}
+    if(peak>0){const g=.9/peak;for(let i=0;i<n;i++)d[i]*=g;}
+    const fade=Math.min(Math.floor(n*.3),Math.floor(sr*.25));
     for(let i=0;i<fade;i++)d[n-fade+i]*=1-i/fade;
-    if(ksCache.size>48)ksCache.clear();
+    if(ksCache.size>96)ksCache.clear();
     ksCache.set(ck,buf);
   }
   const src=audioCtx.createBufferSource();
   src.buffer=buf;src.loop=false;src.start(t);
   return src;
+}
+/* 共振峰链：真实乐器的"腔体/琴体"不止一个峰。
+   传进来的列表会串成一条滤波链，返回链尾节点（对上层仍是单个 pre 节点）。 */
+function buildFormantChain(list,baseFreq,extras){
+  if(!list||!list.length)return null;
+  let head=null,node=null;
+  list.forEach(f=>{
+    const b=audioCtx.createBiquadFilter();
+    b.type=f.type||'peaking';
+    // 峰值频率跟随音高轻微移动（纯固定峰在极端音区会显得死板）
+    const shift=f.follow?Math.max(.6,Math.min(1.8,Math.pow(baseFreq/440,f.follow))):1;
+    b.frequency.value=Math.max(60,Math.min(15000,(f.f||800)*shift));
+    b.Q.value=f.q||1.2;
+    b.gain.value=typeGain(f);
+    if(node)node.connect(b);else head=b;
+    node=b;
+    if(extras)extras.push(b);   // 链中间的节点也要登记，否则停止发声时断不干净
+  });
+  // 上层要连到"链尾"而不是"链头"，否则信号会绕过中间几级直接进滤波器
+  if(head)head._tail=node;
+  return head;
+}
+function typeGain(f){return (f.type==='lowpass'||f.type==='highpass')?0:(f.gain==null?8:f.gain)}
+/* 加法合成：钢琴这类弦鸣乐器必须有"非谐性"（inharmonicity）——
+   真实钢弦的第 n 号泛音略高于 n×f0，越高的泛音偏得越多。
+   少了这一点，叠加出来就是电子琴味，怎么调都不像钢琴。 */
+function buildAdditiveSource(freq,t,partials,extras,oscs,ratios,spec){
+  const mix=audioCtx.createGain();mix.gain.value=1;
+  const B=(spec&&spec.inharm)||0;                 // 非谐系数：钢琴 0.0004 左右
+  // 音越高，泛音越少、衰减越快（真实乐器的高频泛音本来就少）
+  const roll=Math.max(.25,Math.min(1,520/Math.max(80,freq)));
+  partials.forEach(([ratio,gain,type])=>{
+    const o=audioCtx.createOscillator();o.type=type||'sine';
+    const n=ratio;
+    const fDetune=B?Math.sqrt(1+B*n*n):1;         // 非谐性：f_n = n·f0·√(1+B·n²)
+    o.frequency.setValueAtTime(Math.max(20,freq*ratio*fDetune),t);
+    const g=audioCtx.createGain();
+    g.gain.value=gain*Math.min(1,Math.pow(roll,(ratio-1)*.55));
+    o.connect(g).connect(mix);
+    o.start(t);
+    extras.push(o,g);oscs.push(o);ratios.push(ratio*fDetune);
+  });
+  extras.push(mix);
+  return mix;
 }
 function buildFMSource(freq,t,ratio,index,indexDecay,extras,oscs,ratios){
   const car=audioCtx.createOscillator();car.type='sine';car.frequency.setValueAtTime(freq,t);
@@ -1463,21 +1612,10 @@ function buildFMSource(freq,t,ratio,index,indexDecay,extras,oscs,ratios){
   mg.gain.exponentialRampToValueAtTime(Math.max(1,index*.02),t+Math.max(.05,indexDecay));
   mod.connect(mg).connect(car.frequency);
   car.start(t);mod.start(t);
+  // 返回混合节点而不是载波本身，这样敲击瞬态（strike）才有的地方接进去
+  const mix=audioCtx.createGain();car.connect(mix);extras.push(mix);
   extras.push(mod,mg);
   oscs.push(car,mod);ratios.push(1,ratio);
-  return car;
-}
-function buildAdditiveSource(freq,t,partials,extras,oscs,ratios){
-  const mix=audioCtx.createGain();mix.gain.value=1;
-  partials.forEach(([ratio,gain,type])=>{
-    const o=audioCtx.createOscillator();o.type=type||'sine';
-    o.frequency.setValueAtTime(freq*ratio,t);
-    const g=audioCtx.createGain();g.gain.value=gain;
-    o.connect(g).connect(mix);
-    o.start(t);
-    extras.push(o,g);oscs.push(o);ratios.push(ratio);
-  });
-  extras.push(mix);
   return mix;
 }
 function attachVibrato(oscs,t,depthCents,rate,delay,extras){
@@ -1491,6 +1629,183 @@ function attachVibrato(oscs,t,depthCents,rate,delay,extras){
   lfo.start(t);
   extras.push(lfo,amp);
 }
+/* ========================= 采样音色引擎 =========================
+   真实乐器音色靠"采样"而不是"公式合成"：GarageBand / FL Studio / 网页上的 Tone.js、
+   soundfont-player 用的都是同一套思路 —— 预先录好真实乐器的音，回放时按音高变速、
+   按力度调音量。合成（FM / 加法 / 物理建模）再怎么调也只能做到"像"，采样才是"是"。
+   这里按需加载 MusyngKite（通用 MIDI 高质量音色库，真实乐器录音）；
+   离线或加载失败时自动回退到上面的合成引擎，功能不受影响。 */
+const SAMPLE_LIBRARY={
+ piano:'acoustic_grand_piano',epiano:'electric_piano_1',organ:'church_organ',
+ clav:'clavinet',bell:'glockenspiel',marimba:'marimba',musicbox:'music_box',
+ violin:'violin',cello:'cello',erhu:'fiddle',harp:'orchestral_harp',
+ pizzicato:'pizzicato_strings',guitar:'acoustic_guitar_steel',
+ nylonguitar:'acoustic_guitar_nylon',guzheng:'koto',flute:'flute',
+ clarinet:'clarinet',sax:'alto_sax',trumpet:'trumpet',choir:'choir_aahs',
+ accordion:'accordion',contrabass:'contrabass',ebass:'electric_bass_finger',
+ synthbass:'synth_bass_1'
+};
+// sustain=1：这件乐器有"持续段"（弓弦 / 管乐 / 风琴），长音可以循环；
+// sustain=0：衰减型（钢琴 / 吉他 / 竖琴…），按住也只会自然衰减完 —— 真实乐器就是如此
+const SAMPLE_SUSTAIN={organ:1,epiano:1,violin:1,cello:1,erhu:1,flute:1,clarinet:1,sax:1,trumpet:1,choir:1,accordion:1,contrabass:1,ebass:1,synthbass:1};
+const SAMPLE_LABEL={piano:'三角钢琴',epiano:'电钢琴',organ:'管风琴',clav:'古钢琴',bell:'钟琴',marimba:'马林巴',musicbox:'音乐盒',violin:'小提琴',cello:'大提琴',erhu:'二胡',harp:'竖琴',pizzicato:'拨奏',guitar:'民谣吉他',nylonguitar:'尼龙吉他',guzheng:'古筝',flute:'长笛',clarinet:'单簧管',sax:'萨克斯',trumpet:'小号',choir:'人声合唱',accordion:'手风琴',contrabass:'低音提琴',ebass:'电贝斯',synthbass:'合成贝斯'};
+const SF_BASES=[
+ 'https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts/MusyngKite/',
+ 'https://gleitz.github.io/midi-js-soundfonts/MusyngKite/',
+ 'https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts/FatBoy/'
+];
+const SAMPLE_PRELOAD=['piano','epiano','guitar','nylonguitar','violin','cello','flute','ebass'];
+let sampleEngine=true;                 // 总开关
+const sampleBank={};                   // 乐器名 -> {state,bufs,midis,norm,sustain}
+const NOTE_PC={C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+function noteNameToMidi(s){
+  const m=/^([A-G](?:#|b)?)(-?\d+)$/.exec(String(s||'').trim());
+  if(!m)return null;
+  const pc=NOTE_PC[m[1]];if(pc==null)return null;
+  return pc+(Number(m[2])+1)*12;
+}
+function b64ToArrayBuffer(b64){
+  const bin=atob(b64),n=bin.length,bytes=new Uint8Array(n);
+  for(let i=0;i<n;i++)bytes[i]=bin.charCodeAt(i);
+  return bytes.buffer;
+}
+function decodeAsync(ab){
+  return new Promise((res,rej)=>{
+    try{const p=audioCtx.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);}
+    catch(e){rej(e);}
+  });
+}
+function sampleRms(buf){
+  try{
+    const d=buf.getChannelData(0),n=Math.min(d.length,Math.floor(buf.sampleRate*.6));
+    let s=0;for(let i=0;i<n;i++)s+=d[i]*d[i];
+    return Math.sqrt(s/Math.max(1,n))||.0001;
+  }catch(e){return .15;}
+}
+const SAMPLE_STEP=5;                   // 每隔几个半音取一个采样点（越密越真实，也越慢/越大）
+const SF_RE=/"([A-G](?:#|b)?-?\d)"\s*:\s*"data:audio\/(?:mp3|mpeg|ogg);base64,([A-Za-z0-9+\/=]+)"/g;
+async function loadSampleInstrument(localKey){
+  if(!audioCtx)initAudio();
+  if(!audioCtx)return false;
+  const sf=SAMPLE_LIBRARY[localKey];
+  if(!sf)return false;
+  let b=sampleBank[localKey];
+  if(!b)b=sampleBank[localKey]={state:'idle',bufs:[],midis:[],norm:1,sustain:SAMPLE_SUSTAIN[localKey]?1:0};
+  if(b.state==='ready')return true;
+  if(b.state==='error'||b.state==='loading')return false;
+  b.state='loading';updateSampleBar();
+  let txt=null;
+  for(const base of SF_BASES){
+    try{
+      const r=await fetch(base+sf+'-mp3.js',{mode:'cors'});
+      if(!r.ok)continue;
+      const t=await r.text();
+      if(t&&t.length>2000){txt=t;break;}
+    }catch(e){}
+  }
+  if(!txt){b.state='error';b.err='下载失败';updateSampleBar();return false;}
+  const found=[];SF_RE.lastIndex=0;
+  let m;
+  while((m=SF_RE.exec(txt))!==null){
+    const mi=noteNameToMidi(m[1]);
+    if(mi!=null)found.push([mi,m[2]]);
+    if(found.length>400)break;
+  }
+  if(!found.length){b.state='error';b.err='格式不符';updateSampleBar();return false;}
+  found.sort((x,y)=>x[0]-y[0]);
+  // 采样点要均匀铺满整个音域 —— 从最低音贪心取会让高音区完全没有采样，只能靠大幅变速硬拉
+  const LO=33,HI=100;                    // 常用音域（C2 ~ E7），超出这两端的音用最近的采样拉伸
+  let pool=found.filter(f=>f[0]>=LO&&f[0]<=HI);
+  if(pool.length<5)pool=found;
+  const want=Math.min(12,pool.length);
+  const seen={},use=[];
+  for(let k=0;k<want;k++){
+    const idx=Math.round(k*(pool.length-1)/Math.max(1,want-1));
+    if(!seen[idx]){seen[idx]=1;use.push(pool[idx]);}
+  }
+  try{
+    const bufs=await Promise.all(use.map(async f=>await decodeAsync(b64ToArrayBuffer(f[1]))));
+    let rs=0,cnt=0;
+    bufs.forEach((bf,i)=>{
+      if(bf&&bf.length&&bf.duration>.05){b.bufs.push(bf);b.midis.push(use[i][0]);rs+=sampleRms(bf);cnt++;}
+    });
+    if(!b.bufs.length)throw new Error('empty');
+    // 统一响度：不同乐器的录音电平差很多，按 RMS 归一到同一档
+    b.norm=Math.max(.12,Math.min(4,.30/(rs/Math.max(1,cnt))));
+    b.state='ready';updateSampleBar();
+    return true;
+  }catch(e){
+    b.state='error';b.err='解码失败';updateSampleBar();return false;
+  }
+}
+function sampleReady(localKey){const b=sampleBank[localKey];return !!(b&&b.state==='ready'&&b.bufs.length);}
+function pickSampleIdx(bank,midi){
+  let best=0,bd=1e9;
+  for(let i=0;i<bank.midis.length;i++){const d=Math.abs(bank.midis[i]-midi);if(d<bd){bd=d;best=i;}}
+  return best;
+}
+function buildSampleVoice(localKey,midi,t,needSec){
+  const b=sampleBank[localKey];
+  if(!sampleReady(localKey))return null;
+  const i=pickSampleIdx(b,midi);
+  const buf=b.bufs[i],sm=b.midis[i];
+  if(!buf)return null;
+  const src=audioCtx.createBufferSource();
+  src.buffer=buf;
+  const rate=Math.pow(2,(midi-sm)/12);
+  src.playbackRate.value=rate;
+  const natDur=buf.duration/Math.max(.05,rate);
+  if(b.sustain&&needSec>natDur*.9){
+    src.loop=true;                       // 取 sustain 稳定段循环（采样尾部是 release 衰减，不能拿来循环）
+    src.loopStart=buf.duration*.55;
+    src.loopEnd=buf.duration*.88;
+  }
+  src.start(t);
+  // 采样是"录音"，本身就带颤音与呼吸，所以 vib / unison 这类合成修饰不参与
+  const g=audioCtx.createGain();g.gain.value=b.norm;
+  src.connect(g);
+  return {node:g,oscs:[src],extras:[src,g],pre:null,ratios:[1],glidable:false,sample:true};
+}
+function currTrackSource(){
+  const p=trackParams[currentEditingTrack];
+  return p?p.source:null;
+}
+function updateSampleBar(){
+  const st=document.getElementById('sampState');
+  if(!st)return;
+  const key=currTrackSource();
+  if(!sampleEngine){st.textContent='已关闭 · 使用合成音色';return;}
+  if(!key||!SAMPLE_LIBRARY[key]){st.textContent='基础波形 / 鼓组 · 无需采样';return;}
+  const b=sampleBank[key];
+  if(!b||b.state==='idle'){st.textContent='待加载 · '+SAMPLE_LABEL[key];return;}
+  if(b.state==='loading'){st.innerHTML='正在下载 <b>'+SAMPLE_LABEL[key]+'</b> 真实音色…';return;}
+  if(b.state==='error'){st.innerHTML='<span class="warn">⚠ 离线/加载失败 · 已回退合成</span>';return;}
+  st.innerHTML='✓ <b>真实采样</b> · '+SAMPLE_LABEL[key]+'（'+b.bufs.length+' 个采样点）';
+}
+function maybeLoadSample(){
+  if(!sampleEngine)return;
+  const key=currTrackSource();
+  if(!key||!SAMPLE_LIBRARY[key])return;
+  const b=sampleBank[key];
+  if(b&&(b.state==='error'||b.state==='loading'||b.state==='ready'))return;
+  if(!audioCtx)return;               // 还没解锁音频就先不下载，等用户点了再说
+  loadSampleInstrument(key);
+}
+async function preloadSamples(){
+  const btn=document.getElementById('sampPreload');
+  if(!audioCtx)initAudio();
+  if(btn){btn.disabled=true;btn.textContent='下载中 0%';}
+  let done=0;
+  for(const k of SAMPLE_PRELOAD){
+    if(!sampleReady(k))await loadSampleInstrument(k);
+    done++;
+    if(btn)btn.textContent='下载中 '+Math.round(done/SAMPLE_PRELOAD.length*100)+'%';
+  }
+  if(btn){btn.disabled=false;btn.textContent='⬇ 预载常用';}
+  updateSampleBar();
+  if(typeof histToast==='function')histToast('常用真实音色已缓存，之后断网也能用');
+}
+
 function buildInstrumentSource(name,spec,freq,t,midi,u){
   const extras=[],oscs=[],ratios=[];
   if(!spec){
@@ -1524,8 +1839,19 @@ function buildInstrumentSource(name,spec,freq,t,midi,u){
     node=buildKSSource(freq,t,name,brt,dmp,spec.len||2.5,midi);
   }else if(spec.type==='fm'){
     node=buildFMSource(freq,t,spec.ratio,spec.index*(.4+u.bright*1.3),spec.indexDecay,extras,oscs,ratios);
+    if(spec.strike){ // 敲击瞬态：电钢琴的音叉、马林巴的槌、音盒的齿梳，全靠这一点"咔"
+      const n=audioCtx.createBufferSource();n.buffer=getNoiseBuffer();n.loop=true;
+      const bp=audioCtx.createBiquadFilter();bp.type='bandpass';
+      bp.frequency.value=Math.max(600,Math.min(9000,freq*4));bp.Q.value=.9;
+      const ng=audioCtx.createGain();
+      ng.gain.setValueAtTime(spec.strike*(.5+u.bright),t);
+      ng.gain.exponentialRampToValueAtTime(.0001,t+.05);
+      n.connect(bp).connect(ng).connect(node);
+      n.start(t);n.stop(t+.08);
+      extras.push(n,bp,ng);
+    }
   }else if(spec.type==='add'){
-    node=buildAdditiveSource(freq,t,spec.partials,extras,oscs,ratios);
+    node=buildAdditiveSource(freq,t,spec.partials,extras,oscs,ratios,spec);
     if(spec.hammer){ // 钢琴榔头敲击的瞬态噪声
       const n=audioCtx.createBufferSource();n.buffer=getNoiseBuffer();n.loop=true;
       const hp=audioCtx.createBiquadFilter();hp.type='bandpass';hp.frequency.value=Math.min(6000,freq*3);hp.Q.value=.6;
@@ -1536,10 +1862,50 @@ function buildInstrumentSource(name,spec,freq,t,midi,u){
       n.start(t);n.stop(t+.12);
       extras.push(n,hp,ng);
     }
+  }else if(spec.type==='bow'){
+    /* 弓弦：单个锯齿波 + 一个共振峰，是最假的写法 —— 出来的声音又薄又刺耳。
+       真实弓弦 = 两条略微失谐的弦 + 弦本身的高频滚降 + 多个琴体共振峰 + 弓毛摩擦噪声。 */
+    const mix=audioCtx.createGain();
+    const detune=[[-1,1],[1,.92]];                       // 双弦微失谐，产生自然的拍频
+    detune.forEach(([sgn,amp])=>{
+      const o=audioCtx.createOscillator();
+      o.type=spec.wave||'sawtooth';
+      o.frequency.setValueAtTime(freq,t);
+      o.detune.setValueAtTime(sgn*(4.5+(Math.random()*3-1.5)),t);  // 每次微小的随机，避免机械感
+      const g=audioCtx.createGain();g.gain.value=amp*.5;
+      o.connect(g).connect(mix);o.start(t);
+      extras.push(o,g);oscs.push(o);ratios.push(1);
+    });
+    // 弓毛摩擦噪声：起音瞬间最强，之后迅速退到很低的底噪
+    const n=audioCtx.createBufferSource();n.buffer=getNoiseBuffer();n.loop=true;
+    const bp=audioCtx.createBiquadFilter();bp.type='bandpass';
+    bp.frequency.value=Math.max(400,Math.min(7000,freq*3.2));bp.Q.value=.8;
+    const ng=audioCtx.createGain();
+    const bAmt=(spec.bowNoise==null?.16:spec.bowNoise)*(.5+u.bright*1.2);
+    ng.gain.setValueAtTime(bAmt*3.2,t);
+    ng.gain.exponentialRampToValueAtTime(Math.max(.0005,bAmt*.35),t+.09);
+    n.connect(bp).connect(ng).connect(mix);
+    n.start(t);
+    extras.push(mix,n,bp,ng);
+    node=mix;
+    const extra=Math.round((u.unison||0)*2);
+    if(extra>0){
+      const spread=6+(u.unison||0)*16;
+      for(let k=1;k<=extra;k++){
+        const c=audioCtx.createOscillator();c.type=spec.wave||'sawtooth';
+        c.frequency.setValueAtTime(freq,t);
+        c.detune.setValueAtTime((k%2?1:-1)*spread*Math.ceil(k/2),t);
+        const cg=audioCtx.createGain();cg.gain.value=extra>1?.5:.7;
+        c.connect(cg).connect(mix);c.start(t);
+        extras.push(c,cg);oscs.push(c);ratios.push(1);
+      }
+    }
   }else{
     const o=audioCtx.createOscillator();
     o.type=spec.wave||'sine';
     o.frequency.setValueAtTime(freq,t);
+    // 每次起音给一点极小的随机失谐（±4 音分）——真实乐器每次音高都不可能完全一样
+    o.detune.setValueAtTime((Math.random()*8-4)*(spec.detuneRand==null?1:spec.detuneRand),t);
     o.start(t);
     oscs.push(o);ratios.push(1);
     node=o;
@@ -1569,12 +1935,11 @@ function buildInstrumentSource(name,spec,freq,t,midi,u){
       }
     }
   }
-  if(spec.formant){ // 共振峰：决定乐器的"腔体"音色
-    pre=audioCtx.createBiquadFilter();
-    pre.type='peaking';
-    pre.frequency.value=spec.formant;
-    pre.Q.value=spec.q||1.2;
-    pre.gain.value=spec.fGain||8;
+  // 共振峰 / 琴体：优先用多峰链（formants），没有就退回单个 formant 参数
+  if(spec.formants&&spec.formants.length){
+    pre=buildFormantChain(spec.formants,freq,extras);
+  }else if(spec.formant){
+    pre=buildFormantChain([{f:spec.formant,q:spec.q||1.2,gain:spec.fGain||8,follow:.12}],freq,extras);
   }
   return {node,oscs,extras,pre,ratios,glidable:spec.type!=='ks'};
 }
@@ -1595,24 +1960,30 @@ function playNoteAt(midi,track='melody',duration=0.4,when=null){
   const uDamp=Math.max(0,Math.min(1,p.damp==null?.5:p.damp));
   const uVib=Math.max(0,Math.min(1,p.vibrato==null?0:p.vibrato));
   const uUni=Math.max(0,Math.min(1,p.unison==null?0:p.unison));
-  const cutoff=Math.max(40,Math.min(18000,p.cutoff*(0.35+uBright*1.7)));
+  // 采样音色优先：真实录音；基础波形 / 鼓组 / 还没下载好才回退到合成
+  let isSample=false;
+  if(sampleEngine&&track!=='drums'&&sampleReady(p.source))isSample=true;
+  const cutRaw=p.cutoff*(0.35+uBright*1.7);
+  // 采样本身音色已经正确，滤波器不该再削掉亮度，所以把默认开度放大一档
+  const cutoff=Math.max(40,Math.min(18000,isSample?cutRaw*2.2:cutRaw));
   // 滤波包络：正值=从亮扫到暗（经典 synth pluck），负值=从暗扫到亮
   const fEnv=Number(p.filterEnv)||0;
   if(Math.abs(fEnv)>.01){
     const startC=Math.max(60,Math.min(18000,cutoff*Math.pow(4,fEnv)));
     f.frequency.setValueAtTime(startC,t);
     f.frequency.exponentialRampToValueAtTime(Math.max(60,cutoff),t+Math.max(.06,p.decay*.8+.08));
-  }else if(spec&&spec.openRamp){
+  }else if(spec&&spec.openRamp&&!isSample){
     f.frequency.setValueAtTime(Math.max(120,cutoff*.22),t);
     f.frequency.exponentialRampToValueAtTime(cutoff,t+spec.openRamp);
   }else{
     f.frequency.setValueAtTime(cutoff,t);
   }
   f.Q.value=p.resonance;
-  const built=buildInstrumentSource(p.source,spec,freq,t,midi,{bright:uBright,damp:uDamp,vib:uVib,unison:uUni});
+  let built=isSample?buildSampleVoice(p.source,midi+octShift,t,Math.max(.12,duration)+.6):null;
+  if(!built){built=buildInstrumentSource(p.source,spec,freq,t,midi,{bright:uBright,damp:uDamp,vib:uVib,unison:uUni});isSample=false;}
   const src=built.node,extras=built.extras,oscs=built.oscs,ratios=built.ratios||[];
   let chain;
-  if(built.pre){src.connect(built.pre);chain=built.pre;extras.push(built.pre);}
+  if(built.pre){src.connect(built.pre);chain=built.pre._tail||built.pre;extras.push(built.pre);}
   else chain=src;
   // 弯音轮：以音分为单位实时推拉音高（作用于所有带音高的振荡器）。
   if(bendCents&&track!=='drums')oscs.forEach(o=>{try{o.detune.setValueAtTime(bendCents,t)}catch{}});
@@ -1626,8 +1997,8 @@ function playNoteAt(midi,track='melody',duration=0.4,when=null){
     });
   }
   if(built.glidable)trackLastFreq[track]=freq;
-  const vibDepth=Math.min(95,uVib*60+(spec&&spec.vib?spec.vib*22:0));
-  if(vibDepth>.5)attachVibrato(oscs,t,vibDepth,5.1+(spec&&spec.vib?spec.vib*1.6:0),.16,extras);
+  const vibDepth=isSample?Math.min(95,uVib*60):Math.min(95,uVib*60+(spec&&spec.vib?spec.vib*22:0));
+  if(vibDepth>.5)attachVibrato(oscs,t,vibDepth,5.1+(spec&&!isSample&&spec.vib?spec.vib*1.6:0),.16,extras);
   chain.connect(f);
   // 低八度振荡器（Sub）：给音色垫一层厚度，电子/贝斯常用
   const subLvl=Math.max(0,Math.min(1,p.sub||0));
@@ -1638,23 +2009,25 @@ function playNoteAt(midi,track='melody',duration=0.4,when=null){
     so.connect(sg).connect(f);so.start(t);
     extras.push(so,sg);oscs.push(so);ratios.push(.5);
   }
-  // 起音特征（弓弦/管乐的柔和进入），与用户的 ADSR 串联叠加
-  if(spec&&spec.attack){
+  // 起音特征（弓弦/管乐的柔和进入）—— 采样自带真实起音，不要再叠一层
+  if(spec&&spec.attack&&!isSample){
     const art=audioCtx.createGain();
     art.gain.setValueAtTime(.0001,t);
     art.gain.exponentialRampToValueAtTime(1,t+spec.attack);
     f.connect(art);chain=art;extras.push(art);
   }
   // 逐乐器响度补偿（实测校准，避免切换乐器时忽大忽小）
-  const outGain=(spec&&spec.gain)||BASIC_WAVE_GAIN[p.source]||1;
+  const outGain=isSample?1:((spec&&spec.gain)||BASIC_WAVE_GAIN[p.source]||1);
   if(Math.abs(outGain-1)>.001){
     const og=audioCtx.createGain();og.gain.value=outGain;
     chain.connect(og);chain=og;extras.push(og);
   }
   chain.connect(env).connect(s.input);
   // 钢琴/马林巴这类音头亮、余音暗的乐器：滤波随时间下沉（手动设了滤波包络时让位给用户）
-  if(spec&&spec.decayRamp&&Math.abs(fEnv)<=.01)f.frequency.exponentialRampToValueAtTime(Math.max(220,Math.min(9000,cutoff*spec.decayRamp)),t+Math.min(1.8,Math.max(.2,p.decay+.4)));
-  const end=scheduleGainEnvelope(env,t,Math.max(.03,duration),p,(0.6+uDamp*0.9));
+  if(spec&&spec.decayRamp&&!isSample&&Math.abs(fEnv)<=.01)f.frequency.exponentialRampToValueAtTime(Math.max(220,Math.min(9000,cutoff*spec.decayRamp)),t+Math.min(1.8,Math.max(.2,p.decay+.4)));
+  // 采样模式下起音由真实录音决定，ADSR 的 A 若照搬会把钢琴的"铛"磨成"噗"，所以夹到极短
+  const envP=isSample?Object.assign({},p,{attack:Math.min(p.attack||0,.015)}):p;
+  const end=scheduleGainEnvelope(env,t,Math.max(.03,duration),envP,(0.6+uDamp*0.9));
   const id=connectAndRegisterVoice(src,env,f,track,t,end,midi,extras,oscs);
   setTimeout(()=>{document.querySelectorAll(`.key[data-midi="${midi}"]`).forEach(k=>k.classList.add('active'));},Math.max(0,(t-audioCtx.currentTime)*1000));
   setTimeout(()=>{if(keyVoicesForMidi(midi)>0)return;document.querySelectorAll(`.key[data-midi="${midi}"]`).forEach(k=>k.classList.remove('active'));},Math.max(20,(end-audioCtx.currentTime)*1000+80));
@@ -2528,7 +2901,11 @@ document.querySelectorAll('.teach-tab').forEach(b=>b.addEventListener('click',()
   b.classList.add('active');teachTab=b.dataset.tp;renderChordTeach();
 }));
 const keySelTeach=document.getElementById('keySelect');
-if(keySelTeach)keySelTeach.addEventListener('change',()=>{if(typeof renderChordTeach==='function')renderChordTeach()});
+if(keySelTeach)keySelTeach.addEventListener('change',()=>{
+  // 调性变了 → Step 的下拉（音名 + 级数标签）也要跟着重建
+  if(typeof buildStepGrid==='function')buildStepGrid();
+  if(typeof renderChordTeach==='function')renderChordTeach();
+});
 // 切换调式：重建和弦字典 → 重画和弦卡片 / Step 轨2 / 教学区
 const scaleSelTeach=document.getElementById('scaleSelect');
 if(scaleSelTeach)scaleSelTeach.addEventListener('change',()=>{
@@ -2909,10 +3286,30 @@ function ensureStepState(track,i){
  stepState[track][i].events.forEach(e=>{if(e.drum===undefined)e.drum=null;e.tie=!!e.tie});
 }
 function getStepResolution(){return Number(document.getElementById('stepResolution').value)||.25}
+/* Step 音高下拉：默认按"当前调的音阶内音"给，分低 / 中 / 高 三个八度分组，
+   标签写成「级数 · 音名」（如 5 · G4），选出来天然不跑调；
+   调外的变化音放在每组末尾并标注 ♯/♭，需要离调时照样能选到。 */
+function stepScaleDegreeLabel(interval){
+  const steps=scaleSteps();
+  const i=steps.indexOf(interval);
+  if(i>=0)return String(i+1);                       // 调内音 → 级数 1 2 3 …
+  const names=['1','♭2','2','♭3','3','4','♯4','5','♭6','6','♭7','7'];
+  return names[interval]||String(interval);         // 变化音 → ♭3 / ♯4 …
+}
 function makeStepNoteOptions(track,root){
  if(track==='chord')return '<option value="">· 休</option>'+chordDictionary.map((d,i)=>`<option value="${i}">${d.degree} · ${namesForChordDegree(i)}</option>`).join('');
+ const steps=scaleSteps(),inScale=new Set(steps);
+ const OCT_GROUPS=[{o:-12,label:'▽ 低八度'},{o:0,label:'● 中音区（基准）'},{o:12,label:'△ 高八度'}];
  let h='<option value="">· 休</option>';
- for(let o=-12;o<=24;o++){const m=60+root+o;h+=`<option value="${o}">${noteName(m)}${o===0?' · 根音':''}</option>`}
+ OCT_GROUPS.forEach(g=>{
+  let inner='',chroma='';
+  for(let d=0;d<((g.o===12)?13:12);d++){   // 最高八度多给一个音，兼容旧工程里保存到 +24 的值
+   const off=g.o+d,m=60+root+off,lab=stepScaleDegreeLabel(d);
+   const opt=`<option value="${off}">${lab} · ${noteName(m)}</option>`;
+   if(inScale.has(d))inner+=opt;else chroma+=opt;
+  }
+  h+=`<optgroup label="${g.label}">${inner}${chroma}</optgroup>`;
+ });
  return h;
 }
 function namesForChordDegree(i){const d=chordDictionary[i];const v=d&&d.variants&&d.variants[userChordSelections[i]||'triad'];return v?v.label:(d?.degree||'')}
@@ -3186,7 +3583,7 @@ function sliderToParam(k,v){
   const [lo,hi]=rg,n=Math.max(0,Math.min(1000,Number(v)||0))/1000;
   return Math.round(lo*Math.pow(hi/lo,n));
 }
-function syncInspectorUI(){const p=trackParams[currentEditingTrack];inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;e.value=paramToSlider(k,p[k]);const out=document.getElementById('v_'+k);if(out)out.textContent=formatParam(k,p[k])});if(typeof drawCurves==='function')drawCurves();if(typeof updateWaveScope==='function')updateWaveScope()}
+function syncInspectorUI(){const p=trackParams[currentEditingTrack];inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;e.value=paramToSlider(k,p[k]);const out=document.getElementById('v_'+k);if(out)out.textContent=formatParam(k,p[k])});if(typeof drawCurves==='function')drawCurves();if(typeof updateWaveScope==='function')updateWaveScope();if(typeof updateSampleBar==='function'){updateSampleBar();maybeLoadSample();}}
 function setCurrentTrack(track){currentEditingTrack=track;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.track===track));syncInspectorUI();updateStripStatus()}
 const TRACK_CN={melody:'轨1 旋律',chord:'轨2 和弦',bass:'轨3 贝斯',drums:'轨4 鼓组'};
 function updateStripStatus(msg){const el=document.getElementById('stripStatus');if(el)el.textContent=msg||('当前编辑：'+(TRACK_CN[currentEditingTrack]||currentEditingTrack))}
@@ -3196,7 +3593,7 @@ function zeroTrackParams(){const t=currentEditingTrack;Object.assign(trackParams
 // 参数重置：恢复该轨出厂默认参数。
 function resetTrackParams(){const t=currentEditingTrack;trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));commitTrackParams(t);updateStripStatus('已重置 · '+(TRACK_CN[t]||t))}
 function resetAllTrackParams(){['melody','chord','bass','drums'].forEach(t=>{trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));initAudio();applyLiveTrackParams(t)});commitTrackParams(currentEditingTrack);updateStripStatus('已重置 · 全部四条轨道')}
-function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；\n\n【快捷键】空格键 = 播放 / 停止。【节拍器】BPM 与全局音序器统一。【读谱导入】支持三种输入：上传简谱图片（OCR 自动识别，首次使用需联网加载识别引擎）、上传 .txt 文本、直接粘贴文本；识别后会自动清洗成上面的 DAW 语法（去歌词、补空格、识别调号与速度），可手动修正后再写入轨道。注意：图片识别只能读出音符数字，八分音符的下划线、高低音点这类信息识别不出来，需要在下方补 [1 2]、1\'、1,。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。\n\n【基础波形示波器】音源选到锯齿波 / 方波 / 三角波 / 正弦波这四种基础波形时，音源下拉框下方会出现两张小图：左边是时域波形（画 3 个周期），右边是频域谐波（1–16 次谐波的幅度）。换成钢琴、小提琴这类真实乐器音色时这两张图会自动隐藏。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。级数名称会跟着上面的「调式」变（大调是 I ii iii IV V vi vii°，自然小调是 i ii° III iv v VI VII）。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。\n\n【试听与琶音】按住和弦卡片听连续琶音，松开停止：「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。当前 Key 会自动决定实际和弦名称（例如 C 大调中 I–V–vi–IV = C–G–Am–F），卡片当前选择的和弦类型也会沿用到轨2播放。\n\n【📘 乐理课堂】控制条最右边的按钮，点一下才展开教学模块（再点一次收起）：① 音程 ② 音阶与调式 ③ 和弦怎么搭出来 ④ 常用和弦的区别 ⑤ 和弦转位 ⑥ 主 / 下属 / 属功能和声 ⑦ 和弦连接与进行。所有例子跟着当前主音与调式走，点 ▶ 可以试听，试听时键盘会自动把这几个音居中高亮。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲→空），想直接清空就点芯片右边的 ✕，或者在芯片上点右键。\n\n【延音 ⏜】轨1/轨2/轨3 每个子拍右边有一个 ⏜ 按钮，点开（变绿、显示 ⏝）后这一格不再重新起音，而是把前一个音的时值往后延长——相当于简谱里的延音线，用来写长音和切分。再点一次取消。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【整轨移八度】轨1 / 轨2 / 轨3 左侧有「− ⧺ +」一组小按钮，可以整轨上下移动八度（和 DAW 里的八度徽章、快捷打谱面板是同一个值，三处联动）。轨4 鼓组没有音高，所以不显示。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），\n\n【格子怎么用】每格 = 一个起音位置，可独立选择音高与时值，四条轨道同时发声。常用和弦进行按钮会自动把进行填入轨2：默认每个和弦占 4 步，三和弦进行会自动延长最后一个和弦，八和弦进行按 16 步循环压缩。',KEYBOARD:'点击键盘即可实时发声。键盘固定显示三个八度（C3–C6），可以整体 ±1 八度。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。\n\n【和弦自动居中】勾选后（默认开），在和弦区按住任何和弦卡片，键盘会自动整体挪八度、让这几个音尽量落在正中间，并高亮成蓝色；松开即恢复。不想让键盘乱动就取消勾选，只用手动的 ±1 八度。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
+function showHelp(type){const h={DAW:'DAW 是四轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组。播放时切换通道条不会停止其他轨道。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；\n\n【快捷键】空格键 = 播放 / 停止。【节拍器】BPM 与全局音序器统一。【读谱导入】支持三种输入：上传简谱图片（OCR 自动识别，首次使用需联网加载识别引擎）、上传 .txt 文本、直接粘贴文本；识别后会自动清洗成上面的 DAW 语法（去歌词、补空格、识别调号与速度），可手动修正后再写入轨道。注意：图片识别只能读出音符数字，八分音符的下划线、高低音点这类信息识别不出来，需要在下方补 [1 2]、1\'、1,。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复四条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。\n\n【真实采样音色】音源下拉框上方有一个「真实采样音色」开关（默认开）。打开后，选到钢琴、小提琴、长笛这类真实乐器时，会自动联网下载真实乐器的录音采样来发声（和 GarageBand、FL Studio 内置音源是同一套原理：预录真实乐器的音，按音高变速回放），音质远比公式合成真实；第一次选某个乐器时会自动下载，状态栏会显示进度。基础波形（锯齿 / 方波 / 三角波 / 正弦）和鼓组不需要采样。\n\n想提前准备好就点「⬇ 预载常用」，会把钢琴、电钢琴、吉他、小提琴、大提琴、长笛、贝斯这 8 件常用乐器的采样一次缓存好（约 10–20MB，建议上课前在 WiFi 下点一次），之后断网也能用。注意：采样音色下起音瞬态是真实录音自带的，所以 ADSR 的 A 影响很小（想完整演示 ADSR 包络，请把音源切到基础波形，或关掉这个开关）。如果显示「⚠ 离线/加载失败」，说明当前没网或下载被拦截，会自动回退到合成音色，功能完全不受影响；关掉开关则是只用合成音色、完全不联网。\n\n【基础波形示波器】音源选到锯齿波 / 方波 / 三角波 / 正弦波这四种基础波形时，音源下拉框下方会出现两张小图：左边是时域波形（画 3 个周期），右边是频域谐波（1–16 次谐波的幅度）。换成钢琴、小提琴这类真实乐器音色时这两张图会自动隐藏。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。级数名称会跟着上面的「调式」变（大调是 I ii iii IV V vi vii°，自然小调是 i ii° III iv v VI VII）。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。\n\n【试听与琶音】按住和弦卡片听连续琶音，松开停止：「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。当前 Key 会自动决定实际和弦名称（例如 C 大调中 I–V–vi–IV = C–G–Am–F），卡片当前选择的和弦类型也会沿用到轨2播放。\n\n【📘 乐理课堂】控制条最右边的按钮，点一下才展开教学模块（再点一次收起）：① 音程 ② 音阶与调式 ③ 和弦怎么搭出来 ④ 常用和弦的区别 ⑤ 和弦转位 ⑥ 主 / 下属 / 属功能和声 ⑦ 和弦连接与进行。所有例子跟着当前主音与调式走，点 ▶ 可以试听，试听时键盘会自动把这几个音居中高亮。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲→空），想直接清空就点芯片右边的 ✕，或者在芯片上点右键。\n\n【延音 ⏜】轨1/轨2/轨3 每个子拍右边有一个 ⏜ 按钮，点开（变绿、显示 ⏝）后这一格不再重新起音，而是把前一个音的时值往后延长——相当于简谱里的延音线，用来写长音和切分。再点一次取消。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【整轨移八度】轨1 / 轨2 / 轨3 左侧有「− ⧺ +」一组小按钮，可以整轨上下移动八度（和 DAW 里的八度徽章、快捷打谱面板是同一个值，三处联动）。轨4 鼓组没有音高，所以不显示。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），\n\n【格子怎么用】每格 = 一个起音位置，可独立选择音高与时值，四条轨道同时发声。常用和弦进行按钮会自动把进行填入轨2：默认每个和弦占 4 步，三和弦进行会自动延长最后一个和弦，八和弦进行按 16 步循环压缩。',KEYBOARD:'点击键盘即可实时发声。键盘固定显示三个八度（C3–C6），可以整体 ±1 八度。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。\n\n【和弦自动居中】勾选后（默认开），在和弦区按住任何和弦卡片，键盘会自动整体挪八度、让这几个音尽量落在正中间，并高亮成蓝色；松开即恢复。不想让键盘乱动就取消勾选，只用手动的 ±1 八度。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
 
 
 
@@ -4282,12 +4679,15 @@ function initKeyboard(){
   keyboardHeld.forEach(id=>{if(typeof releaseVoiceById==='function')releaseVoiceById(id,.05)});
   keyboardHeld.clear();
   // 键宽自适应：优先用可用宽度把键放大到舒服的尺寸；实在放不下就允许横向滑动
-  const small=(window.innerWidth||1024)<=760;
+  const vw=window.innerWidth||1024,vh=window.innerHeight||768;
+  const small=vw<=760;
+  // 横屏矮屏（手机横放）：键盘必须压矮，否则一屏放不下、要滚动才看得到
+  const landShort=(vw>vh)&&vh<=620;
   const whiteTarget=KEYBOARD_OCTAVES*7+1;   // 3 个八度 = 22 个白键（C3 ~ C6）
-  const kbH=small?200:230;                  // 键盘整体高度（原来 164，现在放大一档）
-  const blackH=Math.round(kbH*(small?.60:.63));
+  const kbH=landShort?(vh<=430?104:132):(small?200:230);   // 键盘整体高度
+  const blackH=Math.round(kbH*(landShort?.62:(small?.60:.63)));
   let whiteW=small?34:54;                   // 原来 40 / 35，放大到 54 / 34
-  const minW=small?26:34;                   // 再窄也不继续压小，改成横向滑动
+  const minW=landShort?24:(small?26:34);    // 再窄也不继续压小，改成横向滑动
   if(wrapper){
     const cs=window.getComputedStyle?window.getComputedStyle(wrapper):null;
     const pad=cs?(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0):32;
@@ -4592,8 +4992,23 @@ inspectorKeys.forEach(k=>{const e=document.getElementById('p_'+k);if(!e)return;c
 // 下拉类控件（滤波型等）也要重画曲线：统一再挂一次 change
 ['p_source','p_filterType'].forEach(id=>{
   const el=document.getElementById(id);
-  if(el)el.addEventListener('change',()=>{if(typeof drawCurves==='function')drawCurves();});
+  if(el)el.addEventListener('change',()=>{if(typeof drawCurves==='function')drawCurves();if(typeof updateSampleBar==='function')updateSampleBar();});
 });
+// ---- 真实采样音色引擎 ----
+{
+  const se=document.getElementById('sampEngine');
+  if(se){
+    se.checked=sampleEngine;
+    se.addEventListener('change',()=>{
+      sampleEngine=se.checked;
+      if(typeof updateSampleBar==='function')updateSampleBar();
+      if(sampleEngine)maybeLoadSample();
+    });
+  }
+  const sp=document.getElementById('sampPreload');
+  if(sp)sp.addEventListener('click',()=>{if(typeof preloadSamples==='function')preloadSamples();});
+  if(typeof updateSampleBar==='function')updateSampleBar();
+}
 document.getElementById('presetSelect').addEventListener('change',e=>{const key=e.target.value;if(key==='save_custom'){const n=prompt('为当前参数组合命名：');if(n){timbrePresets['usr_'+n]=JSON.parse(JSON.stringify(trackParams[currentEditingTrack]));const o=document.createElement('option');o.value='usr_'+n;o.text='👤 '+n;e.target.insertBefore(o,e.target.lastElementChild);alert('预设保存成功！')}}else if(timbrePresets[key]){Object.assign(trackParams[currentEditingTrack],timbrePresets[key]);syncInspectorUI();initAudio();applyLiveTrackParams(currentEditingTrack)}e.target.value=''});
 ['melody','chord','bass','drums'].forEach(t=>document.getElementById('vol_'+t).addEventListener('input',applyVolumes));
 document.getElementById('btnPlay').addEventListener('click',()=>{if(seqRunning&&playbackMode==='daw')stopSequence();else playDaw()});document.getElementById('btnStop').addEventListener('click',stopSequence);document.getElementById('btnStepPlay').addEventListener('click',()=>{if(seqRunning&&playbackMode==='step')stopSequence();else playStep()});document.getElementById('btnStepClear').addEventListener('click',clearStep);document.getElementById('btnUseDaw').addEventListener('click',()=>{playbackMode='daw';document.getElementById('btnUseDaw').classList.add('selected');document.getElementById('btnUseStep').classList.remove('selected');setTransport('待机 · DAW');if(typeof refreshRollData==='function')refreshRollData();});document.getElementById('btnUseStep').addEventListener('click',()=>{playbackMode='step';document.getElementById('btnUseStep').classList.add('selected');document.getElementById('btnUseDaw').classList.remove('selected');setTransport('待机 · STEP');if(typeof refreshRollData==='function')refreshRollData();});document.getElementById('btnMultiWrite').addEventListener('click',openMultiModal);document.getElementById('btnScoreImport').addEventListener('click',openScoreModal);
@@ -4726,6 +5141,10 @@ document.getElementById('btnCustomChord').addEventListener('click',()=>{
 });document.getElementById('btnCustomChordCancel').addEventListener('click',closeCustomChordModal);document.getElementById('btnCustomChordSave').addEventListener('click',saveCustomChord);document.getElementById('btnCustomChordClear').addEventListener('click',clearCustomChord);document.getElementById('customChordModal').addEventListener('click',e=>{if(e.target.id==='customChordModal')closeCustomChordModal();});
 document.querySelectorAll('.drum-pad').forEach(b=>b.addEventListener('pointerdown',()=>{triggerDrum(b.dataset.drum);b.classList.add('active');setTimeout(()=>b.classList.remove('active'),100)}));
 window.addEventListener('pointerup',()=>{ keyboardHeld.forEach((_,m)=>releaseHeldNote(m)); document.querySelectorAll('.chord-card.active').forEach(c=>c.classList.remove('active')); });
+// 旋转屏幕：安卓部分机型 resize 触发时机不一致，补一个 orientationchange + 延迟重建
+window.addEventListener('orientationchange',()=>{
+  setTimeout(()=>{if(document.getElementById('piano'))initKeyboard();},220);
+});
 window.addEventListener('resize',()=>{if(document.getElementById('piano'))initKeyboard()});
 // 浏览器自动播放策略：任何一次真实用户交互都尝试恢复被挂起的音频上下文。
 ['pointerdown','keydown','touchstart'].forEach(ev=>window.addEventListener(ev,()=>{if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume().catch(()=>{})},{passive:true}));
@@ -4775,6 +5194,18 @@ function initNewControls(){
    const tc=document.getElementById('btnTeachClose');if(tc)tc.addEventListener('click',()=>toggleChordTeach(false));}
   if(typeof updateWaveScope==='function')updateWaveScope();
   updateSwingLabel();
+  // 采样音色要等音频解锁后才能解码；这里挂一个"首次交互即开始下载"的触发
+  const kickSample=()=>{
+    if(!audioCtx)return;
+    maybeLoadSample();
+    document.removeEventListener('pointerdown',kickSample);
+    document.removeEventListener('touchstart',kickSample);
+    document.removeEventListener('keydown',kickSample);
+  };
+  document.addEventListener('pointerdown',kickSample,{passive:true});
+  document.addEventListener('touchstart',kickSample,{passive:true});
+  document.addEventListener('keydown',kickSample);
+  if(typeof updateSampleBar==='function')updateSampleBar();
   // Swing 改动要立刻反映到正在播放的音序上
   const swT=document.getElementById('swingToggle'),swA=document.getElementById('swingAmount');
   [swT,swA].forEach(el=>{if(!el)return;
