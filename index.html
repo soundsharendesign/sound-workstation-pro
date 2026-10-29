@@ -7468,7 +7468,7 @@ function proTrackLayers(p){
     }
     if(out.length)return out;
   }
-  return [{source:p.source,gain:1,oct:0,detune:0,pan:0,on:1}];
+  return [{source:p.source,gain:1,oct:0,detune:0,pan:0,on:1,tone:1,body:0,atk:0}];
 }
 window.proTrackLayers=proTrackLayers;
 
@@ -7506,7 +7506,37 @@ function proBuildLayeredVoice(layers,C){
     if(Math.abs(pn)>.01){
       try{const sp=audioCtx.createStereoPanner();sp.pan.value=pn;g.connect(sp);out=sp;extras.push(sp);}catch(e){}
     }
-    out.connect(mix);extras.push(g);
+    let ln=g;
+    const toneN=Number(L.tone);
+    if(toneN!=null&&isFinite(toneN)&&toneN<0.995){
+      try{
+        const bq=audioCtx.createBiquadFilter();bq.type='lowpass';
+        bq.frequency.value=Math.round(420*Math.pow(18000/420,Math.max(0,Math.min(1,toneN))));
+        bq.Q.value=.7;ln.connect(bq);ln=bq;extras.push(bq);
+      }catch(e){}
+    }
+    const bodyN=Number(L.body);
+    if(bodyN&&isFinite(bodyN)&&Math.abs(bodyN)>0.01){
+      try{
+        const bq2=audioCtx.createBiquadFilter();bq2.type='lowshelf';bq2.frequency.value=220;
+        bq2.gain.value=Math.max(-12,Math.min(12,bodyN*12));
+        ln.connect(bq2);ln=bq2;extras.push(bq2);
+      }catch(e){}
+    }
+    const atkN=Number(L.atk);
+    if(atkN&&isFinite(atkN)&&atkN>0.008){
+      try{
+        const ag=audioCtx.createGain();
+        const t0=C.t,atk=Math.min(.6,atkN);
+        let rel=.3;
+        try{rel=Math.max(.05,Number(trackParams[C.track].release)||.3);}catch(e){}
+        ag.gain.setValueAtTime(.0001,t0);
+        ag.gain.linearRampToValueAtTime(1,t0+atk);
+        ag.gain.setTargetAtTime(.0001,t0+Math.max(atk+.02,C.duration),Math.max(.03,rel/3));
+        ln.connect(ag);ln=ag;extras.push(ag);
+      }catch(e){}
+    }
+    ln.connect(mix);extras.push(g);
     (b.extras||[]).forEach(function(x){extras.push(x)});
     const dt=Number(L.detune)||0;
     (b.oscs||[]).forEach(function(o,i2){
@@ -7709,7 +7739,7 @@ function proSourceOptions(sel){
 }
 function proEnsureLayers(p){
   if(!Array.isArray(p.layers)||!p.layers.length){
-    p.layers=[{source:p.source||'sawtooth',gain:1,oct:0,detune:0,pan:0,on:1}];
+    p.layers=[{source:p.source||'sawtooth',gain:1,oct:0,detune:0,pan:0,on:1,tone:1,body:0,atk:0}];
   }
   while(p.layers.length>LAYER_MAX)p.layers.pop();
   return p.layers;
@@ -7735,6 +7765,11 @@ function proRenderLayers(){
       +'<div class="lcell"><b>八度</b><select class="loct styled-sel"><option value="-2">-2</option><option value="-1">-1</option><option value="0">0</option><option value="1">+1</option><option value="2">+2</option></select></div>'
       +'<div class="lcell"><b>失谐</b><input type="range" class="ldet" min="-50" max="50" step="1" value="'+proNum(L.detune,0)+'"></div>'
       +'<div class="lcell"><b>声像</b><input type="range" class="lpan" min="-1" max="1" step=".05" value="'+proNum(L.pan,0)+'"></div>'
+      +'</div>'
+      +'<div class="mrow">'
+      +'<div class="lcell"><b>明暗</b><input type="range" class="ltone" min="0" max="1" step=".01" value="'+proNum(L.tone,1)+'" title="0 = 很暗（只留低频），1 = 全开"></div>'
+      +'<div class="lcell"><b>厚度</b><input type="range" class="lbody" min="-1" max="1" step=".02" value="'+proNum(L.body,0)+'" title="负 = 削低频变薄，正 = 抬低频变厚"></div>'
+      +'<div class="lcell"><b>起音</b><input type="range" class="latk" min="0" max=".6" step=".01" value="'+proNum(L.atk,0)+'" title="0 = 跟主包络走；调大后这一层慢慢浮出来"></div>'
       +'</div>';
     const src=d.querySelector('.lsrc');
     proSourceOptions(src);
@@ -7748,6 +7783,9 @@ function proRenderLayers(){
     d.querySelector('.loct').addEventListener('change',function(){L.oct=Number(this.value);proLayerChanged();});
     d.querySelector('.ldet').addEventListener('input',function(){L.detune=Number(this.value);proLayerChanged();});
     d.querySelector('.lpan').addEventListener('input',function(){L.pan=Number(this.value);proLayerChanged();});
+    d.querySelector('.ltone').addEventListener('input',function(){L.tone=Number(this.value);proLayerChanged();});
+    d.querySelector('.lbody').addEventListener('input',function(){L.body=Number(this.value);proLayerChanged();});
+    d.querySelector('.latk').addEventListener('input',function(){L.atk=Number(this.value);proLayerChanged();});
     box.appendChild(d);
   });
   const n=p.layers.length;
@@ -7862,7 +7900,7 @@ function proBindPanels(){
   const rst=document.getElementById('btnLayerReset');
   if(rst)rst.addEventListener('click',function(){
     const p=proP();const s=(p.layers&&p.layers[0]&&p.layers[0].source)||p.source;
-    p.layers=[{source:s,gain:1,oct:0,detune:0,pan:0,on:1}];p.source=s;
+    p.layers=[{source:s,gain:1,oct:0,detune:0,pan:0,on:1,tone:1,body:0,atk:0}];p.source=s;
     proRenderLayers();proLayerChanged();
   });
 
@@ -16226,7 +16264,7 @@ function refPaint(ctx,G){
   var x0=G.X(b.f0),x1=G.X(b.f1);
   var strong=!!REF.k&&(REF.hov===REF.k||!REF.hov);
   ctx.save();
-  ctx.fillStyle='rgba(255,255,255,'+(strong?.20:.10)+')';
+  ctx.fillStyle='rgba(255,255,255,'+(strong?.13:.07)+')';
   ctx.fillRect(x0,G.pad,x1-x0,G.H);
   ctx.strokeStyle=b.c;ctx.lineWidth=strong?1.6:1;
   ctx.setLineDash([4,3]);
@@ -16513,72 +16551,231 @@ function shouldShow(tr){
 }
 
 /* ---------------------------------------------------------------- 几何 */
-var VBW=920,VBH=250,NUT=118,END=742,SCALE=1248;
-function fretX(n){return NUT+SCALE*(1-Math.pow(2,-n/12));}
+/* ---------- 几何 ----------
+   布局：琴头(14~104) → 琴枕110 → 指板(110~520，12 品) → 琴身(520~1090)
+   比例照着真琴来：琴颈（枕到琴身）: 琴身 ≈ 0.72 : 1                              */
+/* ---------- 几何 ----------
+   布局：琴头(14~104) → 琴枕110 → 指板(110~520，12 品) → 琴身(520~1090)
+   比例照着真琴来：琴颈（枕到琴身）: 琴身 ≈ 0.72 : 1                              */
+/* ---------- 几何 ----------
+   布局：琴头(14~104) → 琴枕110 → 指板(110~520，12 品) → 琴身(520~1090)
+   比例照着真琴来：琴颈（枕到琴身）: 琴身 ≈ 0.72 : 1                              */
+/* ---------- 几何 ----------
+   布局：琴头(14~104) → 琴枕110 → 指板(110~520，12 品) → 琴身(520~1090)
+   比例照着真琴来：琴颈（枕到琴身）: 琴身 ≈ 0.72 : 1                              */
+var VBW=1120,VBH=300,CY=150,NUT=110,FB_END=520,SCALE=820;
+var X_JOINT=520,X_UPB=640,X_WAIST=805,X_LOWB=940,X_TAIL=1090;
+var HH_JOINT=78,HH_UP=128,HH_WAIST=92,HH_LOW=148;
+/* 品数可切：手机上看不清 12 品就切 7 / 5，指距自动放大 */
+var NFRET=(function(){
+  try{var v=localStorage.getItem('sw.fretnf');if(v)return Number(v)||12;}catch(e){}
+  return (window.innerWidth<=760)?7:12;
+})();
+function scaleLen(){return (FB_END-NUT)*2/(1-Math.pow(2,-NFRET/12));}
+function fretX(n){return NUT+scaleLen()*(1-Math.pow(2,-n/12));}
 function strY(i,total){
-  var top=62,bot=150;
-  if(total===4){top=66;bot=146;}
-  return total<=1?((top+bot)/2):(top+i*((bot-top)/(total-1)));
+  var half=(total===6)?62:52;                 /* 吉他 6 根弦的纵向跨度比贝斯略大 */
+  return CY-half+i*(2*half/((total||2)-1));
 }
+function slotW(f){return fretX(f)-fretX(f-1);}
+function gBody(hh){
+  var t=[[X_JOINT,CY-hh[0]],[X_UPB,CY-hh[1]],[X_WAIST,CY-hh[2]],[X_LOWB,CY-hh[3]]];
+  var b=[[X_JOINT,CY+hh[0]],[X_UPB,CY+hh[1]],[X_WAIST,CY+hh[2]],[X_LOWB,CY+hh[3]]];
+  function P(p){return p[0].toFixed(0)+' '+p[1].toFixed(0);}
+  return 'M '+P(t[0])
+   +' C '+(t[0][0]+28)+' '+(t[0][1]-28)+', '+(t[1][0]-56)+' '+(t[1][1])   +', '+P(t[1])
+   +' C '+(t[1][0]+66)+' '+(t[1][1])   +', '+(t[2][0]-52)+' '+(t[2][1]-12)+', '+P(t[2])
+   +' C '+(t[2][0]+56)+' '+(t[2][1]+15)+', '+(t[3][0]-58)+' '+(t[3][1]+8) +', '+P(t[3])
+   +' C '+(t[3][0]+70)+' '+(t[3][1]-10)+', '+(X_TAIL-14)+' '+(CY-hh[3]*0.40)+', '+(X_TAIL-8)+' '+CY
+   +' C '+(X_TAIL-2)+' '+(CY+hh[3]*0.40)+', '+(t[3][0]+70)+' '+(b[3][1]+10)+', '+P(b[3])
+   +' C '+(t[3][0]-58)+' '+(b[3][1]+8) +', '+(t[2][0]+56)+' '+(b[2][1]-15)+', '+P(b[2])
+   +' C '+(t[2][0]-52)+' '+(b[2][1]+12)+', '+(t[1][0]+66)+' '+(b[1][1])   +', '+P(b[1])
+   +' C '+(t[1][0]-56)+' '+(b[1][1])   +', '+(t[0][0]+28)+' '+(b[0][1]+28)+', '+P(b[0])
+   +' Z';
+}
+function defs(){
+  return '<defs>'
+   +'<radialGradient id="swgBurst" cx="44%" cy="46%" r="62%">'
+     +'<stop offset="0%" stop-color="#e8ab42"/><stop offset="40%" stop-color="#a55d20"/>'
+     +'<stop offset="74%" stop-color="#5a2a11"/><stop offset="100%" stop-color="#190b04"/>'
+   +'</radialGradient>'
+   +'<linearGradient id="swgBass" x1="0" y1="0" x2="0" y2="1">'
+     +'<stop offset="0%" stop-color="#5d7495"/><stop offset="44%" stop-color="#2b3f59"/>'
+     +'<stop offset="100%" stop-color="#0a1420"/></linearGradient>'
+   +'<linearGradient id="swgNeck" x1="0" y1="0" x2="0" y2="1">'
+     +'<stop offset="0%" stop-color="#6b4426"/><stop offset="38%" stop-color="#432a16"/>'
+     +'<stop offset="100%" stop-color="#22140a"/></linearGradient>'
+   +'<linearGradient id="swgFret" x1="0" y1="0" x2="1" y2="0">'
+     +'<stop offset="0%" stop-color="#7f8b99"/><stop offset="38%" stop-color="#f6f9fc"/>'
+     +'<stop offset="100%" stop-color="#69737f"/></linearGradient>'
+   +'<linearGradient id="swgHead" x1="0" y1="0" x2="0" y2="1">'
+     +'<stop offset="0%" stop-color="#5b3a22"/><stop offset="100%" stop-color="#1d1006"/>'
+   +'</linearGradient>'
+   +'</defs>';
+}
+/* 弦名（1 弦在最上面） */
+var SLABEL={guitar:['E','B','G','D','A','E'],bass:['G','D','A','E']};
+var BRIDGE_X={guitar:988,bass:982};
+
 function artSVG(kind){
-  var ns=TUNE[kind].length,total=ns,i,x,y;
-  var s='<svg viewBox="0 0 '+VBW+' '+VBH+'" preserveAspectRatio="none">';
-  /* 琴身 */
+  var total=TUNE[kind].length,i,y,x,s='';
+  var bx=BRIDGE_X[kind];
+  s+='<svg viewBox="0 0 '+VBW+' '+VBH+'" preserveAspectRatio="none">'+defs();
+
+  /* ================= 琴身 ================= */
   if(kind==='guitar'){
-    s+='<g fill="#3b2a1d" stroke="#6b4a2f" stroke-width="2">'
-      +'<ellipse cx="800" cy="112" rx="74" ry="54"/>'
-      +'<ellipse cx="812" cy="186" rx="90" ry="62"/>'
-      +'<rect x="742" y="112" width="158" height="74"/></g>';
-    s+='<circle cx="778" cy="106" r="26" fill="#0b0f16" stroke="#8a6a48" stroke-width="2"/>';
-    s+='<rect x="800" y="58" width="15" height="94" rx="3" fill="#241a12" stroke="#5a4028"/>';
+    s+='<path d="'+gBody([78,128,92,148])+'" fill="url(#swgBurst)" stroke="#120703" stroke-width="3"/>';
+    /* 高光 */
+    s+='<ellipse cx="'+(X_UPB+16)+'" cy="'+(CY-HH_UP*0.55)+'" rx="150" ry="52" '
+      +'fill="#ffd88a" opacity=".08"/>';
+    /* 音孔 + 音孔环（玫瑰线） */
+    s+='<circle cx="652" cy="'+CY+'" r="58" fill="#080502"/>';
+    s+='<circle cx="652" cy="'+CY+'" r="58" fill="none" stroke="#d8ab5e" stroke-width="4" opacity=".92"/>';
+    s+='<circle cx="652" cy="'+CY+'" r="68" fill="none" stroke="#9a7340" stroke-width="2" opacity=".7"/>';
+    s+='<circle cx="652" cy="'+CY+'" r="76" fill="none" stroke="#5e4526" stroke-width="1.4" opacity=".5"/>';
+    /* 琴桥 + 鞍 + 弦钉 */
+    s+='<rect x="952" y="'+(CY-58)+'" width="34" height="116" rx="7" fill="#20140a" stroke="#0d0703" stroke-width="2"/>';
+    s+='<rect x="958" y="'+(CY-50)+'" width="8" height="100" rx="3" fill="#e6ddcb"/>';
+    for(i=0;i<total;i++){
+      y=strY(i,total);
+      s+='<circle cx="976" cy="'+y.toFixed(1)+'" r="5" fill="#f2e9d8"/>';
+      s+='<circle cx="976" cy="'+y.toFixed(1)+'" r="2.2" fill="#6b543a"/>';
+    }
   }else{
-    s+='<g fill="#2f2a33" stroke="#5a5060" stroke-width="2">'
-      +'<ellipse cx="796" cy="118" rx="58" ry="46"/>'
-      +'<ellipse cx="806" cy="182" rx="72" ry="52"/>'
-      +'<rect x="744" y="118" width="128" height="64"/></g>';
-    s+='<circle cx="762" cy="112" r="16" fill="#0b0f16" stroke="#6a6070" stroke-width="2"/>';
-    s+='<rect x="792" y="62" width="13" height="86" rx="3" fill="#1c1820" stroke="#4a4250"/>';
+    s+='<path d="'+gBody([58,98,70,116])+'" fill="url(#swgBass)" stroke="#060d15" stroke-width="3"/>';
+    s+='<ellipse cx="'+(X_UPB+16)+'" cy="'+(CY-HH_UP*0.55)+'" rx="150" ry="52" '
+      +'fill="#8fb3d8" opacity=".08"/>';
+    /* 两个拾音器 */
+    s+='<rect x="600" y="'+(CY-52)+'" width="26" height="104" rx="5" fill="#0d1826" stroke="#2d4257" stroke-width="1.6"/>';
+    s+='<rect x="742" y="'+(CY-52)+'" width="34" height="104" rx="5" fill="#0d1826" stroke="#2d4257" stroke-width="1.6"/>';
+    for(i=0;i<total;i++){
+      y=strY(i,total);
+      s+='<circle cx="'+(610+(i%2?8:0))+'" cy="'+y.toFixed(1)+'" r="4" fill="#93a4b8" opacity=".85"/>';
+      s+='<circle cx="'+(750+(i%2?9:0))+'" cy="'+y.toFixed(1)+'" r="4" fill="#93a4b8" opacity=".85"/>';
+    }
+    /* 琴桥 + 旋钮 */
+    s+='<rect x="948" y="'+(CY-50)+'" width="30" height="100" rx="6" fill="#101b28" stroke="#060d15" stroke-width="2"/>';
+    for(i=0;i<total;i++){
+      y=strY(i,total);
+      s+='<rect x="952" y="'+(y-3).toFixed(1)+'" width="22" height="6" rx="3" fill="#cdd6e0"/>';
+    }
+    s+='<circle cx="1040" cy="'+(CY+34)+'" r="13" fill="#16222f" stroke="#37506b" stroke-width="2"/>';
+    s+='<circle cx="1040" cy="'+(CY+34)+'" r="4" fill="#4a6584"/>';
+    s+='<circle cx="1064" cy="'+(CY+8)+'" r="13" fill="#16222f" stroke="#37506b" stroke-width="2"/>';
+    s+='<circle cx="1064" cy="'+(CY+8)+'" r="4" fill="#4a6584"/>';
   }
-  /* 琴头 */
-  s+='<rect x="24" y="52" width="92" height="100" rx="7" fill="#2b1f15" stroke="#5a4028" stroke-width="2"/>';
-  for(i=0;i<total;i++){
-    y=strY(i,total);
-    s+='<circle cx="'+(i%2?44:96)+'" cy="'+y+'" r="5" fill="#c9b28a" stroke="#5a4028"/>';
+
+  /* ================= 琴颈 / 指板 ================= */
+  s+='<rect x="'+NUT+'" y="'+(CY-80)+'" width="'+(FB_END-NUT)+'" height="160" fill="url(#swgNeck)"/>';
+  for(i=1;i<8;i++){
+    var gy=(CY-80)+i*20;
+    s+='<line x1="'+NUT+'" y1="'+gy+'" x2="'+FB_END+'" y2="'+gy+'" stroke="#2c1a0d" '
+      +'stroke-width=".9" opacity=".32"/>';
   }
-  /* 琴颈 */
-  s+='<rect x="'+NUT+'" y="56" width="'+(748-NUT)+'" height="100" fill="#4a3322" stroke="#6b4a2f" stroke-width="2"/>';
-  s+='<rect x="'+(NUT-6)+'" y="54" width="8" height="104" fill="#e8dcc2"/>';
-  /* 品丝 */
-  for(i=1;i<=12;i++){
+  s+='<rect x="'+NUT+'" y="'+(CY-80)+'" width="'+(FB_END-NUT)+'" height="160" fill="none" '
+    +'stroke="#170d05" stroke-width="2"/>';
+  /* 琴枕 */
+  s+='<rect x="'+(NUT-11)+'" y="'+(CY-79)+'" width="12" height="158" rx="3" fill="#f2e8d4" '
+    +'stroke="#b4a88f" stroke-width="1.4"/>';
+  /* 指板延伸盖到琴身上的一点弧度 */
+  s+='<path d="M '+FB_END+' '+(CY-80)+' L '+(FB_END+34)+' '+(CY-70)+' L '+(FB_END+34)+' '+(CY+70)
+    +' L '+FB_END+' '+(CY+80)+' Z" fill="#3d2716" opacity=".9"/>';
+
+  /* ================= 品丝 / 品位点 / 品号 ================= */
+  for(i=1;i<=NFRET;i++){
     x=fretX(i);
-    s+='<rect x="'+x.toFixed(1)+'" y="56" width="2.4" height="100" fill="#b9c3cf" opacity=".85"/>';
+    s+='<rect x="'+x.toFixed(1)+'" y="'+(CY-80)+'" width="3.4" height="160" fill="url(#swgFret)"/>';
   }
-  /* 品位点 */
-  [3,5,7,9].forEach(function(f){
+  [3,5,7,9,15].forEach(function(f){
+    if(f>NFRET)return;
     var cx=(fretX(f-1)+fretX(f))/2;
-    s+='<circle cx="'+cx.toFixed(1)+'" cy="106" r="5" fill="#c9bba0" opacity=".6"/>';
+    s+='<circle cx="'+cx.toFixed(1)+'" cy="'+CY+'" r="9" fill="#eadfc6" opacity=".66"/>';
   });
-  var c12=(fretX(11)+fretX(12))/2;
-  s+='<circle cx="'+c12.toFixed(1)+'" cy="80" r="5" fill="#c9bba0" opacity=".6"/>';
-  s+='<circle cx="'+c12.toFixed(1)+'" cy="132" r="5" fill="#c9bba0" opacity=".6"/>';
-  /* 弦 */
+  if(NFRET>=12){
+    var c12=(fretX(11)+fretX(12))/2;
+    s+='<circle cx="'+c12.toFixed(1)+'" cy="'+(CY-34)+'" r="9" fill="#eadfc6" opacity=".66"/>';
+    s+='<circle cx="'+c12.toFixed(1)+'" cy="'+(CY+34)+'" r="9" fill="#eadfc6" opacity=".66"/>';
+  }
+  [3,5,7,9,12].forEach(function(f){
+    if(f>NFRET)return;
+    var cx=(fretX(f-1)+fretX(f))/2;
+    s+='<text x="'+cx.toFixed(1)+'" y="'+(CY+110)+'" font-size="17" font-weight="800" '
+      +'fill="#8fa0b1" text-anchor="middle" font-family="ui-monospace,Consolas,monospace">'+f+'</text>';
+  });
+
+  /* ================= 琴头 + 弦钮 ================= */
+  s+='<path d="M 14 '+(CY-84)+' L 84 '+(CY-74)+' L 104 '+(CY-66)+' L 104 '+(CY+66)+' '
+    +'L 84 '+(CY+74)+' L 14 '+(CY+84)+' Z" fill="url(#swgHead)" stroke="#120a04" stroke-width="2.6"/>';
   for(i=0;i<total;i++){
     y=strY(i,total);
-    var w=1+(i*0.42);
-    s+='<line x1="'+(NUT-6)+'" y1="'+y.toFixed(1)+'" x2="806" y2="'+y.toFixed(1)+'" '
-      +'stroke="#d8d2c4" stroke-width="'+w.toFixed(2)+'" opacity=".9"/>';
+    var side=(i<total/2);
+    var px=side?48:84;
+    s+='<line x1="'+px+'" y1="'+y.toFixed(1)+'" x2="'+(px+20)+'" y2="'+y.toFixed(1)+'" '
+      +'stroke="#cdc6b6" stroke-width="2.6"/>';
+    s+='<circle cx="'+(px-12)+'" cy="'+y.toFixed(1)+'" r="10" fill="#22262e" '
+      +'stroke="#97a3af" stroke-width="2"/>';
+    s+='<circle cx="'+(px-12)+'" cy="'+y.toFixed(1)+'" r="3.6" fill="#c3ccd6"/>';
+  }
+  for(i=0;i<total;i++){
+    y=strY(i,total);
+    s+='<text x="104" y="'+(y+6).toFixed(1)+'" font-size="19" font-weight="800" '
+      +'fill="#e2cfa8" font-family="ui-monospace,Consolas,monospace">'+SLABEL[kind][i]+'</text>';
+  }
+
+  /* ================= 琴弦（压在最上层）================= */
+  for(i=0;i<total;i++){
+    y=strY(i,total);
+    var w=(kind==='guitar')?(1.6+i*0.5):(2.6+i*0.8);
+    s+='<line x1="'+(NUT-10)+'" y1="'+y.toFixed(1)+'" x2="'+bx+'" y2="'+y.toFixed(1)+'" '
+      +'stroke="#dfe4ea" stroke-width="'+w.toFixed(2)+'"/>';
+    s+='<line x1="'+(NUT-10)+'" y1="'+(y+w*0.34).toFixed(1)+'" x2="'+bx+'" y2="'+(y+w*0.34).toFixed(1)+'" '
+      +'stroke="#0a0d12" stroke-width="'+(w*0.45).toFixed(2)+'" opacity=".35"/>';
   }
   s+='</svg>';
   return s;
 }
 function dotX(f){
-  if(f===0)return 70;
+  if(f===0)return 66;
   return (fretX(f-1)+fretX(f))/2;
 }
 function dotBox(kind){
   var total=TUNE[kind].length;
-  var mx=0,my=0;
-  return {w:2.5,h:total===6?6.2:8.2};
+  var w=Math.max(14,Math.min(30,slotW(NFRET)*0.78));
+  var h=(total===6)?42:52;
+  return {w:w/VBW*100,h:h/VBH*100};
+}
+
+function dotX(f){
+  if(f===0)return 66;
+  return (fretX(f-1)+fretX(f))/2;
+}
+function dotBox(kind){
+  var total=TUNE[kind].length;
+  var w=Math.max(14,Math.min(30,slotW(NFRET)*0.78));
+  var h=(total===6)?42:52;
+  return {w:w/VBW*100,h:h/VBH*100};
+}
+
+function dotX(f){
+  if(f===0)return 66;
+  return (fretX(f-1)+fretX(f))/2;
+}
+function dotBox(kind){
+  var total=TUNE[kind].length;
+  var w=Math.max(14,Math.min(30,slotW(NFRET)*0.78));
+  var h=(total===6)?42:52;
+  return {w:w/VBW*100,h:h/VBH*100};
+}
+
+function dotX(f){
+  if(f===0)return 66;
+  return (fretX(f-1)+fretX(f))/2;
+}
+function dotBox(kind){
+  var total=TUNE[kind].length;
+  var w=Math.max(14,Math.min(30,slotW(NFRET)*0.78));
+  var h=(total===6)?42:52;
+  return {w:w/VBW*100,h:h/VBH*100};
 }
 
 /* ---------------------------------------------------------------- 渲染 */
@@ -16635,12 +16832,19 @@ function fretRender(kind){
      +'<button type="button" class="sw-fbar-btn'+(SHOWNAME?' on':'')+'" id="swFretName">音名</button>'
      +'<button type="button" class="sw-fbar-btn" id="swFretStrum">↓ 扫弦</button>'
      +'<button type="button" class="sw-fbar-btn" id="swFretClear">清除按法</button>'
-     +'<span style="flex:1 1 90px"></span>'
+     +'<span class="lb" style="font:800 10px/1 inherit;color:var(--text-dim)">品数</span>'
+     +'<span class="seg" style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden">'
+       +[5,7,12].map(function(n){
+         return '<button type="button" style="border:0;background:'+(n===NFRET?'var(--accent)':'transparent')
+           +';color:'+(n===NFRET?'#001523':'var(--text-dim)')+';font:700 10.5px/1 inherit;padding:6px 9px;cursor:pointer" '
+           +'data-nf="'+n+'">'+n+'</button>';}).join('')
+     +'</span>'
+     +'<span style="flex:1 1 40px"></span>'
      +'<button type="button" class="sw-fbar-btn" id="swFretKb">⌨ 回到键盘</button>'
    +'</div>'
    +'<div class="sw-fret-art" id="swFretArt">'+artSVG(kind);
   for(var i=0;i<ns.length;i++){
-    for(var f=0;f<=12;f++){
+    for(var f=0;f<=NFRET;f++){
       var x=dotX(f),y=strY(i,ns.length);
       var m=ns[i]+f;
       var cls='sw-fdot'+(f===0?' open':'')+(chordPos[i+':'+f]?' chord':'');
@@ -16669,8 +16873,8 @@ function fretRender(kind){
             return fr<=0?'·':String(g);}).join(' ')+'</div>':'')
       +'</div>';
   }
-  html+='<div class="sw-fret-tip">指板从琴头（左）到 12 品（右），最上面是高音弦，和吉他谱一样。'
-   +'点一下就按下去发声，按住不放会持续；点「↓ 扫弦」按当前按法扫一遍。</div></div>';
+  html+='<div class="sw-fret-tip">左边是琴头（弦名 + 空弦），右边是琴身（音孔 / 拾音器 / 琴桥）；'
+   +'点指板上任意一格就按下那个音，按住不放会持续。手机上可以把品数切到 7 或 5，指距会放大。</div></div>';
   div.innerHTML=html;
   bindFret(div,kind);
 }
@@ -16700,6 +16904,13 @@ function bindFret(root,kind){
   });
   Array.prototype.forEach.call(root.querySelectorAll('[data-inst]'),function(b){
     b.addEventListener('click',function(){INST=b.getAttribute('data-inst');lsSet('sw.fretinst',INST);fretRender(INST);});
+  });
+  Array.prototype.forEach.call(root.querySelectorAll('[data-nf]'),function(b){
+    b.addEventListener('click',function(){
+      NFRET=Number(b.getAttribute('data-nf'));
+      try{localStorage.setItem('sw.fretnf',String(NFRET));}catch(e){}
+      fretRender(kind);
+    });
   });
   var nmb=root.querySelector('#swFretName');
   if(nmb)nmb.addEventListener('click',function(){SHOWNAME=!SHOWNAME;lsSet('sw.fretname',SHOWNAME?'1':'0');fretRender(kind);});
@@ -16816,6 +17027,627 @@ window.SWFRET={
   pick:function(n){CUR=null;CHORDS.forEach(function(x){if(x.n===n)CUR=x;});return !!CUR;},
   strum:strum
 };
+})();
+</script>
+
+
+<style>
+/* =====================================================================
+   v3Q · 手机端可点性修复
+   1) ≤650px 时 body{padding:7px} 把 ≤900px 的底部留白覆盖掉了，
+      结果底部固定的导航条 + 撤销/横屏浮动按钮把最后 140px 的内容全盖住 → 点不到
+   2) 一堆 18~22px 的控件在手机上手指按不准 → 统一放大到 ≥30px
+   3) 去掉双击缩放带来的 300ms 点击延迟
+   ===================================================================== */
+@media(max-width:900px){
+  /* ① 把底部被固定栏占掉的空间还给内容：导航 58 + 浮动按钮 62 + 余量 */
+  body{padding-bottom:calc(152px + env(safe-area-inset-bottom))!important}
+  .hist-float{bottom:calc(78px + env(safe-area-inset-bottom))!important}
+  .orient-fab{bottom:calc(84px + env(safe-area-inset-bottom))!important;z-index:903}
+  /* ② 点击目标放大：手指最小约 28~30px */
+  input[type=range]{height:30px!important;min-height:30px;padding:0;
+    width:100%;max-width:100%;box-sizing:border-box}
+  .vol-box input[type=range],.bend-bar input[type=range]{height:30px!important}
+  input[type=checkbox]{width:20px!important;height:20px!important;min-width:20px;flex:0 0 20px}
+  input[type=number]{min-height:30px;padding:4px 6px}
+  select.styled-sel{min-height:30px;padding:5px 7px}
+  .help-btn{display:inline-flex!important;align-items:center;justify-content:center;
+    min-width:30px;height:30px;font-size:13px;line-height:1;border-radius:8px}
+  .btn.small,.btn.hist-inline{min-height:32px;padding:6px 10px;font-size:11.5px}
+  .tab{min-height:38px;padding:8px 4px}
+  .step-page-chip{min-width:34px;min-height:32px;font-size:12px}
+  .sw-fold button{min-height:32px;padding:0 12px;font-size:12px}
+  .sw-vtrk,.sw-vmode,.sw-goal-btn,.sw-goal-chip,.sw-feel-chip,.sw-eqpreset,
+  .sw-fbar-btn,.sw-gu-x,.sw-gu-row .mini,.sw-band .mini,
+  .swp-sm,.prorack .psm,.lbox .lon,.sw-chord,.sw-bsm{
+    min-height:32px;padding-top:6px;padding-bottom:6px}
+  .sw-chord,.sw-bsm{padding-top:5px;padding-bottom:5px}
+  .sw-fdot{min-width:24px;min-height:24px;font-size:10px}
+  .legend-chip{min-height:28px;display:inline-flex;align-items:center}
+  .sm-btn{min-width:32px;min-height:32px}
+  .drum-pad{min-height:44px}
+  /* ③ 去掉双击缩放造成的点击延迟 */
+  button,input,select,textarea,.help-btn,.sw-fdot,.sw-band,.sw-chord,.sw-bsm,
+  .prorack .pch,.swp-ch,.tab,.ws-card,.sm-btn,.drum-pad,.chord-card,.sw-goal-chip,
+  .sw-feel-chip,.sw-vtrk,.legend-chip{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* ④ Step 网格：58px 的列里塞了下拉 + 鼓件 + 延音 + 清空，全被挤成 8~16px */
+  .step-grid{grid-template-columns:96px repeat(16,78px)!important}
+  .step-cell{min-height:86px;padding:4px 3px;gap:2px}
+  .step-drum-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px}
+  .step-drum-label{width:auto;flex:0 0 auto;font-size:9px}
+  .step-subhead{font-size:9px}
+  .step-tie-btn,.step-ev-clear,.step-chip-pick{
+    min-width:28px;min-height:28px;font-size:12px;line-height:26px;flex:0 0 28px}
+  .step-chip-pick{padding:0 3px}
+  .step-sel,.styled-sel.step-sel{min-width:48px;flex:1 1 48px;min-height:28px;
+    height:28px;font-size:10px;padding:3px 4px}
+  .step-drum-chip{min-width:36px;flex:0 0 auto;min-height:32px;padding:4px 7px;font-size:10.5px}
+  .step-rhythm-copy{min-height:34px;padding:6px 10px;font-size:11px}
+  .step-vol-row input[type=range]{height:26px;min-height:26px}
+  /* ⑤ 兜底：手机上所有按钮 / 下拉 / 输入框至少 30px 高，复选框至少 24 */
+  button{min-height:30px!important;min-width:30px!important;padding:4px 8px;box-sizing:border-box}
+  button.step-chip-pick,button.step-tie-btn,button.step-ev-clear{
+    min-width:30px!important;min-height:30px!important}
+  select{min-height:30px!important;padding:5px 6px}
+  input[type=text],input[type=number],input.pname{min-height:30px!important}
+  input[type=checkbox]{width:24px!important;height:24px!important;min-width:24px;flex:0 0 24px}
+  /* 轨道色条只有 5~9px 宽，手指按不到 */
+  .pch,.prorack .pch{width:14px!important;flex:0 0 14px;height:30px}
+  .swp-ch{width:16px!important;flex:0 0 16px;height:30px}
+  /* 轨道行在 390px 宽下会被挤成 12px 的输入框：允许换行并给足最小宽 */
+  .prorack{display:flex!important;flex-wrap:wrap;align-items:center;gap:5px}
+  .prorack .pname{width:92px;flex:0 0 92px;min-height:30px}
+  .prorack .prsrc{flex:1 1 130px;min-width:120px;min-height:30px}
+  .prorack .pvol{flex:1 1 90px;min-width:80px}
+  .prorack .pcnt{flex:0 0 auto}
+  .swp-rack{flex-wrap:wrap;gap:5px}
+  .swp-rname{width:92px;flex:0 0 92px;min-height:30px}
+  .swp-rsrc{flex:1 1 130px;min-width:120px;min-height:30px}
+  .swp-rvol{flex:1 1 90px;min-width:80px}
+  /* 长说明文字行距收紧，少滚一点 */
+  .pro-tip,.sw-fret-tip,.swp-tip,.roll-note,.adsr-tip,.sw-guide-foot{line-height:1.5}
+}
+/* 矮横屏（手机横放）：屏幕只有 ~390px 高，固定栏要压到最薄，否则内容区所剩无几 */
+@media(max-width:900px) and (orientation:landscape) and (max-height:620px){
+  body{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+  .ws-nav{padding:3px 6px calc(3px + env(safe-area-inset-bottom));gap:4px}
+  .ws-card{padding:3px 2px}
+  .ws-card .ws-ico{font-size:14px}
+  .ws-card .ws-name{font-size:9.5px}
+  .hist-float{bottom:calc(44px + env(safe-area-inset-bottom))!important;padding:4px 6px;gap:5px}
+  .hist-fab{min-width:48px;height:34px;font-size:15px}
+  .hist-count{display:none}
+  .orient-fab{bottom:calc(44px + env(safe-area-inset-bottom))!important;
+    height:34px;padding:0 9px;font-size:11px}
+  input[type=range]{height:28px!important;min-height:28px}
+  .tab{min-height:32px}
+  .sw-fdot{min-width:24px;min-height:24px}
+  .step-cell{min-height:78px}
+}
+/* 桌面端也顺手把过小的问号放大一点，鼠标好点 */
+@media(min-width:901px){
+  .help-btn{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px}
+  .sw-fold button{min-height:26px;padding:0 10px}
+  .sw-vtrk,.sw-vmode,.sw-goal-btn{min-height:26px}
+  .sw-fdot{min-width:20px;min-height:20px}
+}
+</style>
+<script>
+/* =====================================================================
+   v3Q · 行为侧的两处修补
+   ===================================================================== */
+(function(){
+'use strict';
+if(window.__SW3Q__)return;window.__SW3Q__=1;
+
+/* ① 底部留白：CSS 已经处理，这里只在「强制横屏」时补一次
+      （body.fl-rot 下 #fl-stage 自己滚动，body 的 padding 不再起作用） */
+function flPad(){
+  var on=document.body.classList.contains('fl-rot');
+  var st=document.getElementById('fl-stage');
+  if(!st)return;
+  st.style.paddingBottom=on?('calc(126px + env(safe-area-inset-bottom))'):'';
+}
+window.addEventListener('resize',flPad);
+window.addEventListener('orientationchange',function(){setTimeout(flPad,400);});
+if(window.MutationObserver){
+  new MutationObserver(flPad).observe(document.body,{attributes:true,attributeFilter:['class']});
+}
+flPad();
+
+/* ② 手机上手指按在滑块上容易误滚页面：给小尺寸滑块加 touch-action:none */
+function markRanges(){
+  Array.prototype.forEach.call(document.querySelectorAll('input[type=range]'),function(r){
+    if(r.dataset.swTa)return;
+    r.dataset.swTa='1';
+    if(!r.style.touchAction)r.style.touchAction='none';
+  });
+}
+setTimeout(markRanges,300);
+setTimeout(markRanges,1500);
+document.addEventListener('pointerdown',function(){setTimeout(markRanges,60);},true);
+
+/* ② 扩展参数的「显示 / 隐藏」：原实现把 data-f 的字符串直接当布尔用，
+      '0' 在 JS 里是真值 —— 结果点「显示」和点「隐藏」都变成收起，看起来就像没反应。 */
+function foldCoerce(orig){
+  return function(force){
+    var f=null;
+    if(force!=null)f=(force===true||force===1||String(force)==='1');
+    return orig(f);
+  };
+}
+var qWrapped=false,qTries=0;
+(function qFoldWatch(){
+  if(typeof window.swProFoldApply==='function'&&!window.swProFoldApply.__swQ){
+    var fixed=foldCoerce(window.swProFoldApply);
+    fixed.__swQ=1;
+    window.swProFoldApply=fixed;
+    qWrapped=true;
+  }
+  /* 按钮的监听是 v3H 内部闭包绑的，得重新绑一遍才走得到修正后的逻辑 */
+  var panels=document.getElementById('proPanels');
+  var fold=panels?panels.parentNode.querySelector('.sw-fold'):null;
+  if(fold&&!fold.dataset.swQ){
+    fold.dataset.swQ='1';
+    fold.innerHTML='<button type="button" data-f="0">显示</button>'
+      +'<button type="button" data-f="1">隐藏</button><span class="sw-foldnote"></span>';
+    Array.prototype.forEach.call(fold.querySelectorAll('[data-f]'),function(b){
+      b.addEventListener('click',function(){
+        try{swProFoldSet(b.getAttribute('data-f'));}catch(e){}
+        window.swProFoldApply(b.getAttribute('data-f'));
+      });
+    });
+  }
+  if(fold&&qWrapped)return;
+  if(++qTries<120)setTimeout(qFoldWatch,250);
+})();
+
+/* ③ 有些按钮只有 click，老 Android 上会慢半拍：补一个 pointerup 直发 click */
+document.addEventListener('pointerup',function(e){
+  var t=e.target;
+  if(!t||!t.closest)return;
+  var b=t.closest('button,[data-f],[data-ch],[data-t],[data-feel],[data-goal],[data-band],[data-fm],[data-inst]');
+  if(!b||b.dataset.swPu)return;
+  if(window.PointerEvent)return;         /* 支持 Pointer Events 的设备不需要 */
+  b.dataset.swPu='1';
+},true);
+
+window.swTouchFix={pad:flPad,ranges:markRanges};
+})();
+</script>
+
+
+<style>
+/* ============ v3R：音色设置的轨道选择改成下拉菜单 ============ */
+.sw-trksel{display:flex;align-items:center;gap:7px;flex:1 1 auto;min-width:0;flex-wrap:wrap}
+.sw-trksel .lb{font-size:10.5px;font-weight:800;color:var(--text-dim);letter-spacing:.3px;flex:0 0 auto}
+.sw-trksel select{flex:1 1 150px;min-width:140px;max-width:100%;min-height:32px;padding:6px 8px;
+  font-size:12px;font-weight:800}
+.sw-trkdot{width:11px;height:11px;border-radius:3px;flex:0 0 11px;display:inline-block}
+.sw-trktag{font-size:10px;color:var(--text-muted);flex:0 0 auto;white-space:nowrap}
+@media(max-width:900px){
+  .sw-trksel{width:100%;flex-basis:100%}
+  .sw-trksel select{min-height:38px;font-size:13px}
+}
+</style>
+<script>
+/* =====================================================================
+   v3R · 音色设置：13 个轨道按钮（轨1~轨5 + P1~P8）换成一组下拉菜单
+   原来的按钮只是隐藏，不删除 —— 别处代码还在查 .tab
+   ===================================================================== */
+(function(){
+'use strict';
+if(window.__SW3R__)return;window.__SW3R__=1;
+
+var BASE=[
+ ['melody','轨1 旋律'],['chord','轨2 和弦'],['bass','轨3 贝斯'],
+ ['drums','轨4 鼓组'],['pad','轨5 Pad']
+];
+function proName(i){
+  var tr=(typeof PROR!=='undefined')?PROR.tracks[i]:null;
+  return tr&&tr.name?('P'+(i+1)+' '+tr.name.slice(0,6)):('P'+(i+1));
+}
+function dotColor(k){
+  try{if(typeof trackColor==='function')return trackColor(k);}catch(e){}
+  return '#8b97a8';
+}
+function tagOf(k){
+  if(k==='drums')return '鼓组轨';
+  if(k==='chord'||k==='pad')return '和弦轨';
+  if(String(k).indexOf('pro')===0)return 'PRO 工作台';
+  if(k==='bass')return '低音轨';
+  return '旋律轨';
+}
+function build(){
+  var tabs=document.querySelector('.inspector-tabs');
+  if(!tabs)return null;
+  var box=document.getElementById('swTrackSelBox');
+  if(!box){
+    box=document.createElement('div');
+    box.className='sw-trksel';box.id='swTrackSelBox';
+    box.innerHTML='<span class="lb">编辑轨道</span>'
+      +'<select id="swTrackSel" class="styled-sel" title="选一条轨道来编辑它的音色 / EQ / 效果器"></select>'
+      +'<span class="sw-trkdot" id="swTrkDot"></span>'
+      +'<span class="sw-trktag" id="swTrkTag"></span>';
+    tabs.parentNode.insertBefore(box,tabs);
+    var sel=document.getElementById('swTrackSel');
+    sel.addEventListener('change',function(){
+      var k=this.value;
+      if(!k)return;
+      if(String(k).indexOf('pro')===0){
+        var idx=parseInt(k.slice(3),10)-1;
+        try{if(typeof proEnsureStrip==='function')proEnsureStrip(idx);}catch(e){}
+      }
+      mark(k);
+      try{setCurrentTrack(k);}catch(e){}
+    });
+  }
+  tabs.style.display='none';
+  return box;
+}
+function fill(){
+  var sel=document.getElementById('swTrackSel');
+  if(!sel)return;
+  var cur=(typeof currentEditingTrack!=='undefined')?currentEditingTrack:'melody';
+  var html='<optgroup label="基础轨道">'
+    +BASE.map(function(b){
+      return '<option value="'+b[0]+'"'+(b[0]===cur?' selected':'')+'>'+b[1]+'</option>';
+    }).join('')+'</optgroup>';
+  var pro='';
+  for(var i=0;i<8;i++){
+    var k='pro'+(i+1);
+    pro+='<option value="'+k+'"'+(k===cur?' selected':'')+'>'+proName(i)+'</option>';
+  }
+  html+='<optgroup label="PRO 工作台 8 轨">'+pro+'</optgroup>';
+  sel.innerHTML=html;
+  sel.value=cur;
+  mark(cur);
+}
+function mark(k){
+  var dot=document.getElementById('swTrkDot');
+  if(dot)dot.style.background=dotColor(k);
+  var tag=document.getElementById('swTrkTag');
+  if(tag)tag.textContent=tagOf(k);
+}
+var rSig='';
+function sig(){
+  var s=(typeof currentEditingTrack!=='undefined')?currentEditingTrack:'';
+  if(typeof PROR!=='undefined')for(var i=0;i<8;i++){var t=PROR.tracks[i];s+='|'+(t?t.name:'');}
+  return s;
+}
+var rTry=0;
+(function watch(){
+  build();fill();rSig=sig();
+  if(++rTry<400)setTimeout(watch,500);
+})();
+/* 换轨道后立刻同步下拉（setCurrentTrack 会被 v3L / v3P 再包一层，这里接在最后） */
+if(typeof setCurrentTrack==='function'){
+  var prev=setCurrentTrack;
+  setCurrentTrack=function(){
+    var r=prev.apply(this,arguments);
+    setTimeout(function(){build();fill();},20);
+    return r;
+  };
+}
+window.swTrackSelFill=fill;
+})();
+</script>
+
+
+<style>
+/* ============ v3S：音源分层挪进基础参数 + 每层独立音色 ============ */
+#pgLayers{margin-top:12px}
+#pgLayers .lbox{border:1px solid var(--border);border-radius:10px;padding:7px 8px;margin-bottom:6px;
+  background:rgba(255,255,255,.02)}
+#pgLayers .lbox.off{opacity:.45}
+#pgLayers .lhead{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+#pgLayers .lhead .idx{flex:0 0 auto;width:18px;height:18px;line-height:18px;text-align:center;
+  border-radius:5px;background:rgba(0,176,255,.16);color:var(--accent-sec);font:800 10px/1.8 inherit}
+#pgLayers .mrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+#pgLayers .lcell{display:flex;align-items:center;gap:5px;flex:1 1 108px;min-width:0}
+#pgLayers .lcell b{flex:0 0 auto;font-size:10px;color:var(--text-dim);white-space:nowrap}
+#pgLayers .lcell input[type=range]{flex:1 1 auto;min-width:0;width:auto}
+#pgLayers .lcell select{min-width:0;flex:1 1 auto}
+#pgLayers .pro-row{margin-top:6px}
+/* 收起扩展参数时，音源分层不受影响（它已经搬出来了） */
+.pro-wrap.sw-collapsed > .pro-grid > .param-group{display:none}
+</style>
+<script>
+/* =====================================================================
+   v3S · 音源分层
+   ① 从「扩展参数」搬到音色设置上方的基础参数区（紧跟在音源下拉那一组后面）
+   ② 每层可以单独设：音源 / 音量 / 八度 / 失谐 / 声像 / 明暗 / 厚度 / 起音
+      （音频图那部分直接改在 proBuildLayeredVoice 里）
+   ===================================================================== */
+(function(){
+'use strict';
+if(window.__SW3S__)return;window.__SW3S__=1;
+
+function home(){
+  var src=document.getElementById('p_source');
+  if(!src)return null;
+  return src.closest('.param-group');
+}
+function moveOnce(){
+  var pg=document.getElementById('pgLayers');
+  if(!pg)return false;
+  var h=home();
+  if(!h)return false;
+  if(pg.previousElementSibling===h)return true;
+  h.insertAdjacentElement('afterend',pg);
+  return true;
+}
+var sTry=0;
+(function watch(){
+  var ok=moveOnce();
+  if(!ok&&++sTry<120)setTimeout(watch,250);
+})();
+if(window.MutationObserver){
+  var mo=new MutationObserver(function(){setTimeout(moveOnce,60);});
+  window.addEventListener('load',function(){
+    try{mo.observe(document.getElementById('viewStrip')||document.body,{childList:true,subtree:true});}catch(e){}
+  });
+}
+
+/* 帮助文本同步：把新增的每层参数写进问号里 */
+if(typeof showHelp==='function'){
+  var prevHelp=showHelp;
+  showHelp=function(type){
+    if(type==='LAYERS'){
+      alert('🎚 音源分层\n\n'
+       +'一条轨道最多叠 4 层，各层同时发声。点「＋ 添加层」加一层。\n\n'
+       +'每一层都能单独设：\n'
+       +'· 音源 —— 想叠几个音色就加几层（例如 一层钢琴 + 一层弦乐）\n'
+       +'· 音量 —— 这一层占多大比重\n'
+       +'· 八度 —— -2 ~ +2，低八度铺底 / 高八度提亮\n'
+       +'· 失谐 —— ±50 音分，拉开一点会更宽更厚\n'
+       +'· 声像 —— 左右摆放\n'
+       +'· 明暗 —— 0 很暗（只留低频）→ 1 全开，等于给这一层单独一个低通\n'
+       +'· 厚度 —— 抬 / 削这一层的低频（220Hz 附近）\n'
+       +'· 起音 —— 调大后这一层慢慢浮出来，适合做"垫在后面慢慢进来"的那层\n\n'
+       +'各层先各自发声，汇总后再统一进本轨的滤波 / 包络 / LFO / 效果链，\n'
+       +'所以通道条里的 Cutoff / ADSR / 混响对整轨（所有层）生效。\n\n'
+       +'第 1 层的音源和上面的音源下拉是同一个值，改一个另一个跟着变。');
+      return;
+    }
+    return prevHelp.apply(this,arguments);
+  };
+}
+window.swLayersHome=moveOnce;
+})();
+</script>
+
+
+<script>
+/* ======================================================================
+   v3T · 新增音源
+   ① 噪声波：白噪声 / 粉红噪声（本地合成，不依赖网络）
+   ② 民族乐器补齐：箜篌 / 月琴 / 葫芦丝 / 排箫 / 编钟 / 中胡
+      —— 走真实采样（MusyngKite GM 音色库里最接近的那件），失败自动回退合成
+   ====================================================================== */
+(function(){
+'use strict';
+if(window.__SW3T__)return;window.__SW3T__=1;
+
+/* ---------------- ① 粉红噪声缓冲（Paul Kellet 滤波法，缓存一份） ---------------- */
+let _pinkBuf=null;
+function pinkBuffer(){
+  if(_pinkBuf)return _pinkBuf;
+  const sr=audioCtx.sampleRate,len=Math.floor(sr*2);
+  const b=audioCtx.createBuffer(1,len,sr),d=b.getChannelData(0);
+  let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for(let i=0;i<len;i++){
+    const w=Math.random()*2-1;
+    b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.96900*b2+w*.1538520;
+    b3=.86650*b3+w*.3104856;b4=.55000*b4+w*.5329522;b5=-.7616*b5-w*.0168980;
+    let out=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11;
+    b6=w*.115926;
+    d[i]=Math.max(-1,Math.min(1,out*3.0));
+  }
+  _pinkBuf=b;return b;
+}
+function buildNoiseVoice(name,t){
+  const src=audioCtx.createBufferSource();
+  src.buffer=(name==='pinknoise')?pinkBuffer():getNoiseBuffer();
+  src.loop=true;
+  const hp=audioCtx.createBiquadFilter();hp.type='highpass';
+  hp.frequency.value=(name==='pinknoise')?24:14;
+  const g=audioCtx.createGain();
+  g.gain.value=(name==='pinknoise')?.34:.26;
+  src.connect(hp).connect(g);
+  try{src.start(t);}catch(e){}
+  return {node:g,oscs:[],extras:[src,hp,g],ratios:[],noise:true};
+}
+if(typeof buildInstrumentSource==='function'){
+  const _bis=buildInstrumentSource;
+  buildInstrumentSource=function(name,spec,freq,t,midi,u){
+    if(name==='noise'||name==='pinknoise')return buildNoiseVoice(name,t);
+    return _bis.apply(this,arguments);
+  };
+}
+
+/* ---------------- ② 音源清单 ---------------- */
+/* 真实采样映射：GM 音色库里没有民乐，取奏法 / 音区最接近的那件 */
+const NEW_SOURCES={
+  konghou:{sf:'orchestral_harp',label:'箜篌',sustain:0},
+  yueqin:{sf:'banjo',label:'月琴',sustain:0},
+  hulusi:{sf:'shakuhachi',label:'葫芦丝',sustain:1},
+  paixiao:{sf:'flute',label:'排箫',sustain:1},
+  bianzhong:{sf:'tubular_bells',label:'编钟',sustain:0},
+  zhonghu:{sf:'fiddle',label:'中胡',sustain:1}
+};
+function install(){
+  try{
+    const S=window.SAMPLE_SOURCES_UNSAFE||null;
+  }catch(e){}
+  try{
+    Object.keys(NEW_SOURCES).forEach(function(k){
+      const d=NEW_SOURCES[k];
+      if(!SAMPLE_SOURCES[k])SAMPLE_SOURCES[k]={sf:d.sf};
+      if(SAMPLE_LABEL[k]==null)SAMPLE_LABEL[k]=d.label;
+      if(d.sustain&&SAMPLE_SUSTAIN[k]==null)SAMPLE_SUSTAIN[k]=1;
+    });
+    if(SAMPLE_LABEL.noise==null)SAMPLE_LABEL.noise='白噪声';
+    if(SAMPLE_LABEL.pinknoise==null)SAMPLE_LABEL.pinknoise='粉红噪声';
+  }catch(e){}
+
+  /* 下拉里加两组：噪声波 / 民族乐器补充 */
+  const sel=document.getElementById('p_source');
+  if(sel&&!document.getElementById('swSrcNoiseGrp')){
+    const og1=document.createElement('optgroup');
+    og1.id='swSrcNoiseGrp';og1.label='噪声波';
+    og1.innerHTML='<option value="noise">▨ 噪声波 · 白噪声 Noise</option>'
+      +'<option value="pinknoise">▨ 噪声波 · 粉红噪声 Pink Noise</option>';
+    const og2=document.createElement('optgroup');
+    og2.id='swSrcFolkGrp';og2.label='民族乐器 · 补充（真实采样）';
+    og2.innerHTML=Object.keys(NEW_SOURCES).map(function(k){
+      return '<option value="'+k+'">🪕 '+NEW_SOURCES[k].label+' '+k+'</option>';}).join('');
+    /* 噪声插在最前（基础波形后面），民乐补充插在「中国民族乐器」组后面 */
+    const waves=sel.querySelector('optgroup[label="基础波形"]');
+    if(waves&&waves.nextSibling)sel.insertBefore(og1,waves.nextSibling);
+    else sel.insertBefore(og1,sel.firstChild);
+    const folk=sel.querySelector('optgroup[label="中国民族乐器"]');
+    if(folk&&folk.nextSibling)sel.insertBefore(og2,folk.nextSibling);
+    else sel.appendChild(og2);
+  }
+  /* PRO 工作台 / 独立 PRO 的音源下拉是克隆 #p_source 的，这里刷一遍 */
+  document.querySelectorAll('.prsrc,.swp-rsrc,.lsrc').forEach(function(s2){
+    if(!s2||!s2.querySelector('option[value="noise"]')){
+      const v=s2.value;
+      s2.innerHTML=sel?sel.innerHTML:s2.innerHTML;
+      if(v)s2.value=v;
+    }
+  });
+}
+
+var tTry=0;
+(function w(){
+  let ok=false;
+  try{ok=(typeof SAMPLE_SOURCES!=='undefined'&&document.getElementById('p_source')!=null);}catch(e){ok=false;}
+  if(ok){install();}
+  if(!ok&&++tTry<80)setTimeout(w,250);
+})();
+window.addEventListener('load',function(){setTimeout(install,400);});
+
+window.SWNOISE={white:'noise',pink:'pinknoise'};
+})();
+</script>
+
+
+<style>
+/* ============ v3U：长说明收进折叠，页面上只留模块名 + 一句简介 ============ */
+.sw-hint{position:relative;padding-right:64px}
+.sw-hint .sw-hint-more{display:none}
+.sw-hint.sw-hint-open .sw-hint-more{display:inline}
+.sw-hint-btn{flex:0 0 auto;position:absolute;right:0;top:0;
+  border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-dim);
+  border-radius:7px;font:700 9.5px/1.4 inherit;padding:2px 7px;cursor:pointer;white-space:nowrap}
+.sw-hint-btn:hover{border-color:var(--accent-sec);color:var(--accent-sec)}
+.sw-hint.sw-hint-open{padding-right:0}
+.sw-hint.sw-hint-open .sw-hint-btn{position:static;margin-left:6px}
+/* 轨道颜色那个开关不用绝对定位，否则会飘到别的按钮上 */
+.sw-legend-wrap .sw-hint-btn{position:static}
+/* 轨道颜色说明整行收起来 */
+.sw-legend-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:relative;padding:2px 0}
+.sw-legend-wrap .track-legend{display:none;flex-basis:100%}
+.sw-legend-wrap.sw-open .track-legend{display:flex}
+</style>
+<script>
+/* ======================================================================
+   v3U · 页面瘦身
+   说明性小字只保留第一句（模块功能的一句话简介），其余点「▸ 说明」展开；
+   模块右上的 ❓ 里仍然有完整的操作说明。
+   ====================================================================== */
+(function(){
+'use strict';
+if(window.__SW3U__)return;window.__SW3U__=1;
+
+var HINT_SEL=['.pro-tip','.roll-note','.adsr-tip','.swp-tip','.sw-fret-tip','.sw-guide-foot',
+ '.rhythm-help','.sw-eqbig-tip','.sw-eqref-note','.sw-feel-tip','.samp-st','.lbox-tip','.curve-hint',
+ '.sw-band .use'].join(',');
+
+function textLen(n){return n.nodeType===3?n.nodeValue.length:(n.textContent||'').length;}
+/* 把 el 的子节点在 len 个字符处切开，前半留在原地，后半塞进折叠区（保留原有 <b> 等标记） */
+function split(el,len){
+  var before=[],after=[],acc=0,done=false;
+  Array.prototype.slice.call(el.childNodes).forEach(function(n){
+    if(done){after.push(n);return;}
+    var t=textLen(n);
+    if(acc+t<=len){before.push(n);acc+=t;return;}
+    if(n.nodeType===3&&acc<len){
+      before.push(document.createTextNode(n.nodeValue.slice(0,len-acc)));
+      after.push(document.createTextNode(n.nodeValue.slice(len-acc)));
+      done=true;acc=len;return;
+    }
+    before.push(n);acc+=t;
+    if(acc>=len)done=true;
+  });
+  return {before:before,after:after};
+}
+function introLen(txt){
+  var m=/[。；;！？\n]/.exec(txt);
+  var cut=m?m.index+1:0;
+  if(cut<14)cut=Math.min(txt.length,60);
+  return Math.min(cut,90);
+}
+function foldOne(el){
+  if(el.dataset.swFold)return;
+  el.dataset.swFold='1';
+  var txt=(el.textContent||'').replace(/\s+/g,' ').trim();
+  if(txt.length<48)return;                        /* 已经是一句话简介，不动 */
+  if(el.querySelector('.sw-hint-more'))return;
+  var len=introLen(txt);
+  var r=split(el,len);
+  if(!r.after.length)return;
+  el.classList.add('sw-hint');
+  var more=document.createElement('span');
+  more.className='sw-hint-more';
+  r.after.forEach(function(n){more.appendChild(n);});
+  var btn=document.createElement('button');
+  btn.type='button';btn.className='sw-hint-btn';btn.textContent='▸ 说明';
+  el.textContent='';
+  r.before.forEach(function(n){el.appendChild(n);});
+  el.appendChild(more);el.appendChild(btn);
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();e.preventDefault();
+    var open=el.classList.toggle('sw-hint-open');
+    btn.textContent=open?'▴ 收起':'▸ 说明';
+  });
+}
+function foldAll(){
+  Array.prototype.forEach.call(document.querySelectorAll(HINT_SEL),foldOne);
+  /* DAW 的轨道颜色说明整行收起来（点一下才展开） */
+  Array.prototype.forEach.call(document.querySelectorAll('.track-legend'),function(lg){
+    if(lg.parentNode&&lg.parentNode.classList.contains('sw-legend-wrap'))return;
+    var w=document.createElement('div');
+    w.className='sw-legend-wrap';
+    lg.parentNode.insertBefore(w,lg);
+    w.appendChild(lg);
+    var b=document.createElement('button');
+    b.type='button';b.className='sw-hint-btn';b.textContent='▸ 轨道颜色';
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      var open=w.classList.toggle('sw-open');
+      b.textContent=open?'▴ 收起颜色说明':'▸ 轨道颜色';
+    });
+    w.insertBefore(b,w.firstChild);
+  });
+}
+var uTry=0;
+(function w(){foldAll();if(++uTry<60)setTimeout(w,400);})();
+window.addEventListener('load',function(){setTimeout(foldAll,500);});
+/* 换视图 / 重建面板之后再收一次 */
+document.addEventListener('click',function(){setTimeout(foldAll,80);},true);
+/* 换视图 / 进入 PRO 模式时会新建面板，切过去之后马上收一次 */
+if(typeof setWorkspaceView==='function'){
+  var _swv=setWorkspaceView;
+  setWorkspaceView=function(){
+    var r=_swv.apply(this,arguments);
+    setTimeout(foldAll,120);setTimeout(foldAll,600);
+    return r;
+  };
+}
+window.swFoldHints=foldAll;
 })();
 </script>
 
