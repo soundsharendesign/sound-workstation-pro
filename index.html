@@ -21640,6 +21640,23 @@ window.SWCARD={cards:function(){return document.querySelectorAll(SEL+'[data-swca
   width:1px!important;height:1px!important;margin:0!important;
   opacity:0!important;pointer-events:none!important;z-index:-1;
 }
+/* ⑥ 选项卡下只显示一张卡片：统一宽度、独占一行、水平居中。
+   隐藏卡片仍是 0 高度，行间距归零，卡片下面不会留出一串空行。
+   不依赖视口宽度，手机横屏超过 900px 也不会变回左右两列。 */
+#viewStrip .inspector-grid,
+#viewStrip .pro-grid{
+  row-gap:0!important;align-content:start!important;
+}
+#viewStrip .param-group:not(.sw-tab-off){
+  grid-column:1 / -1!important;grid-row:1!important;
+  justify-self:center;
+  width:min(100%,900px)!important;
+  margin-left:auto!important;margin-right:auto!important;
+}
+/* 窄屏：卡片贴着内容区两侧，左右留白相等 */
+@media(max-width:900px){
+  #viewStrip .param-group:not(.sw-tab-off){width:100%!important}
+}
 </style>
 <script>
 /* ==========================================================
@@ -21909,6 +21926,7 @@ window.SWTABS={
 };
 })();
 </script>
+
 
 
 
