@@ -1856,7 +1856,13 @@ function attachVibrato(oscs,t,depthCents,rate,delay,extras){
    ① tjsi = tonejs-instruments —— 真实乐器的独奏录音，一个音一个文件（按需下载，音质最好）
    ② sf   = MusyngKite 通用 MIDI 音色库 —— 全音域整包，作为兜底
    两源都在 jsdelivr 上（国内可访问），都失败才回退到合成引擎。 */
-const TJSI_BASE='https://cdn.jsdelivr.net/gh/nbrosowsky/tonejs-instruments/samples/';
+/* 多镜像：实测 cdn.jsdelivr.net 常连不上，gcore / jsdmirror 可用。
+   同时打多个源取最先成功的，避免单源超时把一次切换拖到两三分钟。 */
+const TJSI_BASES=[
+ 'https://gcore.jsdelivr.net/gh/nbrosowsky/tonejs-instruments/samples/',
+ 'https://cdn.jsdmirror.com/gh/nbrosowsky/tonejs-instruments/samples/',
+ 'https://cdn.jsdelivr.net/gh/nbrosowsky/tonejs-instruments/samples/'
+];
 const TJSI_NOTES={
  'bass-electric':[25,28,31,34,37,40,43,46,49,52,55,58,61,64,67,70,73],
  'bassoon':[43,45,48,55,57,60,64,67,69,72],
@@ -1913,8 +1919,10 @@ const SAMPLE_SOURCES={
 const SAMPLE_SUSTAIN={organ:1,epiano:1,violin:1,viola:1,cello:1,erhu:1,flute:1,clarinet:1,sax:1,trumpet:1,choir:1,accordion:1,contrabass:1,ebass:1,synthbass:1,dizi:1,xiao:1,xun:1,suona:1,sheng:1};
 const SAMPLE_LABEL={pipa:'琵琶',liuqin:'柳琴',sanxian:'三弦',ruan:'阮',guqin:'古琴',yangqin:'扬琴',dizi:'竹笛',xiao:'箫',xun:'埙',suona:'唢呐',sheng:'笙',matouqin:'马头琴',piano:'钢琴',epiano:'电钢琴',organ:'管风琴',clav:'古钢琴',bell:'钟琴',marimba:'马林巴',musicbox:'音乐盒',violin:'小提琴',viola:'中提琴',cello:'大提琴',erhu:'二胡',harp:'竖琴',pizzicato:'拨奏',guitar:'民谣吉他',nylonguitar:'尼龙吉他',eguitar:'电吉他',guzheng:'古筝',flute:'长笛',clarinet:'单簧管',sax:'萨克斯',trumpet:'小号',choir:'人声合唱',accordion:'手风琴',contrabass:'低音提琴',ebass:'电贝斯',synthbass:'合成贝斯',slapbass:'Slap 贝斯'};
 const SF_BASES=[
- 'https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts/MusyngKite/',
  'https://gleitz.github.io/midi-js-soundfonts/MusyngKite/',
+ 'https://cdn.jsdmirror.com/gh/gleitz/midi-js-soundfonts/MusyngKite/',
+ 'https://gcore.jsdelivr.net/gh/gleitz/midi-js-soundfonts/MusyngKite/',
+ 'https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts/MusyngKite/',
  'https://cdn.jsdelivr.net/gh/gleitz/midi-js-soundfonts/FatBoy/'
 ];
 const SAMPLE_PRELOAD=['piano','epiano','guitar','eguitar','violin','cello','flute','ebass'];
@@ -1946,19 +1954,72 @@ function sampleRms(buf){
   }catch(e){return .15;}
 }
 // ---------- 通用：挑选采样点 + 归一化 ----------
-async function fetchWithTimeout(url,ms,asText){
+async function fetchWithTimeout(url,ms,asText,ctl){
   let r;
-  if(typeof AbortController!=='undefined'){
-    const ctl=new AbortController();
-    const to=setTimeout(()=>ctl.abort(),ms);
-    try{r=await fetch(url,{mode:'cors',signal:ctl.signal});}
+  if(ctl||typeof AbortController!=='undefined'){
+    const c=ctl||new AbortController();
+    const to=setTimeout(()=>c.abort(),ms);
+    try{r=await fetch(url,{mode:'cors',signal:c.signal});}
     finally{clearTimeout(to);}
-  }else r=await fetch(url,{mode:'cors'});
+  }else{
+    // 没有 AbortController 的老浏览器也要有超时兜底，不能让一次请求无限挂住
+    r=await Promise.race([
+      fetch(url,{mode:'cors'}),
+      new Promise((_,rej)=>setTimeout(()=>{
+        const e=new Error('下载超时');e.name='AbortError';rej(e);
+      },ms))
+    ]);
+  }
   if(!r.ok)throw new Error('HTTP '+r.status);
   return asText?await r.text():await r.arrayBuffer();
 }
-function fetchTextTimeout(url,ms){return fetchWithTimeout(url,ms,true);}
-function fetchArrayTimeout(url,ms){return fetchWithTimeout(url,ms,false);}
+function fetchTextTimeout(url,ms,ctl){return fetchWithTimeout(url,ms,true,ctl);}
+function fetchArrayTimeout(url,ms,ctl){return fetchWithTimeout(url,ms,false,ctl);}
+/* 多镜像竞速：同一个文件同时打所有可用镜像，最先返回有效内容的胜出。
+   单源超时不再串行叠加；连续失败的镜像降权，避免死源把每个音都拖一遍。
+   胜出后中止其余请求，防止几个 2~3MB 的音色包继续占带宽。 */
+const MIRROR_FAIL={},MIRROR_WIN={};
+const MIRROR_MAXFAIL=2;
+function firstMirror(bases,path,ms,asText,validate){
+  var group=bases[0]||'',alive=[],i;
+  for(i=0;i<bases.length;i++)if((MIRROR_FAIL[bases[i]]||0)<MIRROR_MAXFAIL)alive.push(bases[i]);
+  if(!alive.length)alive=bases.slice();
+  function race(list){
+    var ctls=[];
+    return new Promise(function(resolve,reject){
+      var settled=false,left=list.length,lastErr='下载失败';
+      list.forEach(function(base,idx){
+        var url=base+path;
+        var c=(typeof AbortController!=='undefined')?new AbortController():null;
+        ctls[idx]=c;
+        fetchWithTimeout(url,ms,asText,c).then(function(d){
+          if(validate&&!validate(d))throw new Error('返回内容不是音色文件');
+          return d;
+        }).then(function(d){
+          if(settled)return;
+          settled=true;MIRROR_FAIL[base]=0;MIRROR_WIN[group]=base;
+          /* 停掉没跑赢的镜像，避免几个 2~3MB 的音色包继续占带宽 */
+          for(var k=0;k<ctls.length;k++)if(k!==idx&&ctls[k]){try{ctls[k].abort();}catch(e){}}
+          resolve({data:d,base:base,url:url});
+        },function(e){
+          if(settled)return;   /* 别的镜像已胜出，被中止不算这个镜像失败 */
+          MIRROR_FAIL[base]=(MIRROR_FAIL[base]||0)+1;
+          lastErr=(e&&e.name==='AbortError')?'下载超时':((e&&e.message)||'网络错误');
+          if(--left===0){settled=true;reject(new Error(lastErr));}
+        });
+      });
+    });
+  }
+  /* 上一次胜出的镜像先单飞：命中就只发一个请求，不再每次开三条连接 */
+  var win=MIRROR_WIN[group];
+  if(win&&alive.indexOf(win)>=0){
+    var rest=alive.filter(function(b){return b!==win;});
+    return race([win]).catch(function(){
+      return rest.length?race(rest):Promise.reject(new Error('下载失败'));
+    });
+  }
+  return race(alive);
+}
 function pickSpread(list,want){
   const n=list.length;
   if(n<=want)return list.slice();
@@ -1996,14 +2057,17 @@ async function loadTjsi(b,inst){
   const want=Math.max(6,Math.min(14,Math.round(span/5)+1));
   const picked=pickSpread(notes,want);
   const bufs=new Array(picked.length).fill(null);
-  // 4 个一组并发，避免一次开太多连接被浏览器限速
-  for(let i=0;i<picked.length;i+=4){
-    await Promise.all(picked.slice(i,i+4).map(async(n,j)=>{
+  // 6 个一组并发；每个音在多个镜像里竞速，7 秒还没结果就判失败
+  for(let i=0;i<picked.length;i+=6){
+    await Promise.all(picked.slice(i,i+6).map(async(n,j)=>{
       try{
-        const ab=await fetchArrayTimeout(TJSI_BASE+inst+'/'+tjsiNoteName(n)+'.mp3',25000);
-        bufs[i+j]=await decodeAsync(ab);
+        const r=await firstMirror(TJSI_BASES,inst+'/'+tjsiNoteName(n)+'.mp3',7000,false,
+          d=>d&&d.byteLength>2000);
+        bufs[i+j]=await decodeAsync(r.data);
       }catch(e){bufs[i+j]=null;}
     }));
+    // 第一批全军覆没就立刻让位给 GM 音色库，别把 14 个音逐个等一遍超时
+    if(i===0&&!bufs.some(x=>x))return false;
   }
   return commitBuffers(b,picked,bufs);
 }
@@ -2012,16 +2076,13 @@ async function loadTjsi(b,inst){
    这个正则必须带 g；每次使用前要把 lastIndex 归零，否则第二次调用会从上次位置继续找。 */
 const SF_RE=/"([A-G](?:#|b)?-?\d+)"\s*:\s*"data:audio\/[a-z0-9.]+;base64,([^"]+)"/g;
 async function loadSoundfont(b,sfName){
-  let txt=null,lastErr='';
-  for(const base of SF_BASES){
-    try{
-      const t=await fetchTextTimeout(base+sfName+'-mp3.js',30000);
-      // 必须真的含音频数据：否则 404 页面 / 拦截页也会被当成成功
-      if(t&&t.length>2000&&t.indexOf('data:audio/')>=0){txt=t;b.src=base;break;}
-      lastErr='返回内容不是音色文件';
-    }catch(e){lastErr=(e&&e.name==='AbortError')?'下载超时':((e&&e.message)||'网络错误');}
-  }
-  if(!txt){b.err=lastErr||'下载失败';return false;}
+  let txt=null;
+  // 三个以上镜像同时竞速，10 秒为限；必须真的含音频数据，404 页 / 拦截页不算成功
+  try{
+    const r=await firstMirror(SF_BASES,sfName+'-mp3.js',10000,true,
+      t=>t&&t.length>2000&&t.indexOf('data:audio/')>=0);
+    txt=r.data;b.src=r.base;
+  }catch(e){b.err=(e&&e.message)||'下载失败';return false;}
   const found=[];SF_RE.lastIndex=0;
   let m;
   while((m=SF_RE.exec(txt))!==null){
@@ -2153,7 +2214,9 @@ function updateSampleBar(){
     st.innerHTML='<span class="warn">⚠ '+(b.err||'加载失败')+' · 已回退合成</span> <span class="retry">点此重试</span>';
     st.dataset.act='load';return;
   }
-  st.innerHTML='✓ <b>'+(b.quality?b.quality+' · ':'')+SAMPLE_LABEL[key]+'</b>（'+b.bufs.length+' 个采样点）';
+  // quality 常常和乐器名相同（如 violin 的「小提琴」），不重复拼一遍
+  const q=(b.quality&&b.quality!==SAMPLE_LABEL[key])?b.quality+' · ':'';
+  st.innerHTML='✓ <b>'+q+SAMPLE_LABEL[key]+'</b>（'+b.bufs.length+' 个采样点）';
   st.dataset.act='';
 }
 function retrySample(){
@@ -2194,6 +2257,27 @@ async function preloadSamples(){
   updateSampleBar();
   if(typeof histToast==='function')histToast('常用真实音色已缓存，之后断网也能用');
 }
+/* 采样链路诊断接口：const / let 是脚本词法绑定，不在 window 上，
+   验收脚本需要显式入口才能读到 bank 状态、镜像表和超时上限。 */
+window.SWSAMPLE={
+  mirrors:function(){
+    var f={},k;for(k in MIRROR_FAIL)if(Object.prototype.hasOwnProperty.call(MIRROR_FAIL,k))f[k]=MIRROR_FAIL[k];
+    return {tjsi:TJSI_BASES.slice(),sf:SF_BASES.slice(),fails:f};
+  },
+  limits:function(){return {tjsiMs:7000,sfMs:10000,kitMs:10000,race:true};},
+  sources:function(){return Object.keys(SAMPLE_SOURCES);},
+  state:function(k){
+    var b=sampleBank[k];
+    return b?{state:b.state,bufs:b.bufs.length,err:b.err||'',quality:b.quality||''}:null;
+  },
+  ready:sampleReady,
+  load:function(k,force){return loadSampleInstrument(k,!!force);},
+  update:updateSampleBar,
+  bar:function(){
+    var e=document.getElementById('sampBar'),s=document.getElementById('sampState');
+    return e?{parent:e.parentElement?e.parentElement.id:'',text:s?s.textContent:''}:null;
+  }
+};
 
 function buildInstrumentSource(name,spec,freq,t,midi,u){
   const extras=[],oscs=[],ratios=[];
@@ -8902,19 +8986,11 @@ function swLoadDrumKit(force){
   if(!audioCtx)return Promise.resolve(false);
   DRUMKIT.state='loading';DRUMKIT.err='';
   swKitUI();
-  var bases=SF_BASES;
-  var tryNext=function(i){
-    if(i>=bases.length)return Promise.reject(new Error(DRUMKIT.err||'下载失败'));
-    return fetchTextTimeout(bases[i]+'percussion-mp3.js',45000).then(function(txt){
-      if(txt&&txt.length>2000&&txt.indexOf('data:audio/')>=0)return txt;
-      DRUMKIT.err='返回内容不是音色文件';
-      return tryNext(i+1);
-    },function(e){
-      DRUMKIT.err=(e&&e.name==='AbortError')?'下载超时':'网络错误';
-      return tryNext(i+1);
-    });
-  };
-  return tryNext(0).then(function(txt){
+  /* 鼓组音色包同样走镜像竞速：旧版串行 45s×5 个源，最坏要等三四分钟 */
+  return firstMirror(SF_BASES,'percussion-mp3.js',10000,true,function(txt){
+    return txt&&txt.length>2000&&txt.indexOf('data:audio/')>=0;
+  }).then(function(r){
+    var txt=r.data;
     var map={},re=/"([A-G](?:#|b)?-?\d+)"\s*:\s*"data:audio\/[a-z0-9.]+;base64,([^"]+)"/g,m;
     while((m=re.exec(txt))!==null){
       var mi=noteNameToMidi(m[1]);
@@ -20368,19 +20444,30 @@ function killDockMore(){
   if(b&&b.parentNode)b.parentNode.removeChild(b);
 }
 var busy=false,origInit=null;
+/* 退出琵琶面板时把 #piano 恢复成普通键盘；面板若已被别的模块拆掉，
+   has=false 也要清，否则 sw-pipa-mode / 内联 height 会把键盘压成 0 高度。 */
+function resetPipa(div){
+  div.classList.remove('sw-pipa-mode');
+  if(div.style.height)div.style.height='';
+  if(div.style.background)div.style.background='';
+}
 function apply(){
   if(busy)return;
   var div=document.getElementById('piano');if(!div)return;
   var want=wantPipa(),has=!!div.querySelector('.sw-pipa');
-  /* 状态一致时只做幂等校正：setTitle 内部有值判断，不写重复内容就不会唤醒观察器 */
-  if(want===has){setTitle(want);return;}
+  /* 状态一致时只做幂等校正：setTitle 内部有值判断，不写重复内容就不会唤醒观察器。
+     want=false 时必须补一次清理：面板可能已被别的模块拆掉，但类和内联样式还留在 #piano 上。 */
+  if(want===has){
+    if(!want)resetPipa(div);
+    setTitle(want);return;
+  }
   killDockMore();
   busy=true;
   try{
     if(want)render(div);
     else{
-      div.classList.remove('sw-pipa-mode');
-      if(origInit)origInit();
+      resetPipa(div);
+      if(has&&origInit)origInit();
     }
     setTitle(want);
   }catch(e){}finally{busy=false;}
@@ -20452,6 +20539,7 @@ window.SWAG={
 };
 })();
 </script>
+
 
 
 
@@ -21344,6 +21432,17 @@ function bind(div,key){
 
 /* ---------------- 接管键盘区 ---------------- */
 var busy=false,prevInit=null,obs=null;
+/* 退出乐器面板时把 #piano 恢复成普通键盘。
+   别的模块（键盘重建 / 音源切换）可能先把 .sw-ai 拆掉，此时 has=false，
+   原来的 apply() 会直接 return，把 sw-ai-mode 和内联 height/background 留在 #piano 上，
+   键盘就被压成 0 高度、只露出最上面一小截。 */
+function resetAI(div){
+  div.classList.remove('sw-ai-mode');
+  div.removeAttribute('data-swai');
+  if(div.style.height)div.style.height='';
+  if(div.style.background)div.style.background='';
+  setTitle('');
+}
 function apply(){
   if(busy)return;
   var div=document.getElementById('piano');if(!div)return;
@@ -21353,14 +21452,12 @@ function apply(){
     if(div.classList.contains('dk-mode'))div.classList.remove('dk-mode');
     setTitle(key);return;
   }
-  if(!key&&!has){setTitle('');return;}
+  if(!key&&!has){resetAI(div);return;}
   busy=true;
   try{
     if(key)render(div,key,sig);
     else{
-      div.classList.remove('sw-ai-mode');
-      div.removeAttribute('data-swai');
-      setTitle('');
+      resetAI(div);
       if(prevInit)prevInit();
     }
   }catch(e){}finally{busy=false;}
@@ -21464,6 +21561,7 @@ window.SWAI={
 };
 })();
 </script>
+
 
 
 
@@ -21657,6 +21755,11 @@ window.SWCARD={cards:function(){return document.querySelectorAll(SEL+'[data-swca
 @media(max-width:900px){
   #viewStrip .param-group:not(.sw-tab-off){width:100%!important}
 }
+/* ⑦ 真实采样状态栏：原本只待在 OSC & FILTER 卡片里，切到别的模块就看不见。
+   把它挂到音源选项卡底部，任何模块下都能看到「有没有加载真实采样」。 */
+.sw-sampdock{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.1)}
+.sw-sampdock .samp-bar{margin:0}
+@media(max-width:900px){.sw-sampdock .samp-bar{gap:6px}}
 </style>
 <script>
 /* ==========================================================
@@ -21756,7 +21859,20 @@ function ensureBoxes(){
   }
   var s=srcSel();
   if(s&&!s.classList.contains('sw-native-hidden'))s.classList.add('sw-native-hidden');
+  dockSampleBar();
   return true;
+}
+/* 搬的是原节点，不克隆 —— #sampEngine / #sampPreload / #sampState 上的监听器都还在。
+   只在父节点不是 dock 时写一次 DOM，避免巡检 / MutationObserver 反复触发。 */
+function dockSampleBar(){
+  var sb=document.getElementById('swSrcTabBox'),bar=document.getElementById('sampBar');
+  if(!sb||!bar)return;
+  var dock=document.getElementById('swSampDock');
+  if(!dock){
+    dock=document.createElement('div');dock.className='sw-sampdock';dock.id='swSampDock';
+    sb.appendChild(dock);
+  }
+  if(bar.parentElement!==dock)dock.appendChild(bar);
 }
 
 /* ---------------- 音源分类选项卡 ---------------- */
@@ -21926,6 +22042,8 @@ window.SWTABS={
 };
 })();
 </script>
+
+
 
 
 
