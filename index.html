@@ -1975,12 +1975,91 @@ async function fetchWithTimeout(url,ms,asText,ctl){
 }
 function fetchTextTimeout(url,ms,ctl){return fetchWithTimeout(url,ms,true,ctl);}
 function fetchArrayTimeout(url,ms,ctl){return fetchWithTimeout(url,ms,false,ctl);}
+/* ---------- 本地持久缓存：IndexedDB ----------
+   HTTP 磁盘缓存会被移动浏览器清掉，刷新就要重新下 2~5MB 采样。
+   把下载成功的原始字节落到 IndexedDB，命中时连网络请求都不发。
+   IndexedDB 不可用（隐私模式 / 旧 WebView）时静默降级到原来的网络路径。 */
+const SDB_NAME='sw-samples',SDB_STORE='bytes',SDB_VER=1;
+let sdbPromise=null;
+function sampleDB(){
+  if(sdbPromise)return sdbPromise;
+  sdbPromise=new Promise(function(resolve){
+    if(typeof indexedDB==='undefined'||!indexedDB){resolve(null);return;}
+    try{
+      const rq=indexedDB.open(SDB_NAME,SDB_VER);
+      rq.onupgradeneeded=function(){const db=rq.result;if(!db.objectStoreNames.contains(SDB_STORE))db.createObjectStore(SDB_STORE);};
+      rq.onsuccess=function(){resolve(rq.result);};
+      rq.onerror=function(){resolve(null);};
+      rq.onblocked=function(){resolve(null);};
+    }catch(e){resolve(null);}
+  });
+  return sdbPromise;
+}
+function sampleCacheGet(key){
+  return sampleDB().then(function(db){
+    if(!db)return null;
+    return new Promise(function(resolve){
+      try{
+        const rq=db.transaction(SDB_STORE,'readonly').objectStore(SDB_STORE).get(key);
+        rq.onsuccess=function(){resolve(rq.result==null?null:rq.result);};
+        rq.onerror=function(){resolve(null);};
+      }catch(e){resolve(null);}
+    });
+  }).catch(function(){return null;});
+}
+function sampleCachePut(key,data){
+  return sampleDB().then(function(db){
+    if(!db||data==null)return false;
+    // decodeAudioData 会 detach 传进去的 ArrayBuffer，先复制一份再交给 IDB
+    let v=data;
+    if(v instanceof ArrayBuffer){try{v=v.slice(0);}catch(e){return false;}}
+    return new Promise(function(resolve){
+      try{
+        const tx=db.transaction(SDB_STORE,'readwrite');
+        tx.objectStore(SDB_STORE).put(v,key);
+        tx.oncomplete=function(){resolve(true);};
+        tx.onerror=function(){resolve(false);};
+        tx.onabort=function(){resolve(false);};
+      }catch(e){resolve(false);}
+    });
+  }).catch(function(){return false;});
+}
+function sampleCacheStats(){
+  return sampleDB().then(function(db){
+    if(!db)return {ok:false,n:0,bytes:0};
+    return new Promise(function(resolve){
+      try{
+        const cur=db.transaction(SDB_STORE,'readonly').objectStore(SDB_STORE).openCursor();
+        let n=0,b=0;
+        cur.onsuccess=function(e){
+          const c=e.target&&e.target.result;
+          if(c){n++;const v=c.value;b+=typeof v==='string'?v.length:((v&&v.byteLength)||0);c.continue();}
+          else resolve({ok:true,n:n,bytes:b});
+        };
+        cur.onerror=function(){resolve({ok:false,n:0,bytes:0});};
+      }catch(e){resolve({ok:false,n:0,bytes:0});}
+    });
+  }).catch(function(){return {ok:false,n:0,bytes:0};});
+}
+function sampleCacheClear(){
+  return sampleDB().then(function(db){
+    if(!db)return false;
+    return new Promise(function(resolve){
+      try{
+        const tx=db.transaction(SDB_STORE,'readwrite');
+        tx.objectStore(SDB_STORE).clear();
+        tx.oncomplete=function(){resolve(true);};
+        tx.onerror=function(){resolve(false);};
+      }catch(e){resolve(false);}
+    });
+  }).catch(function(){return false;});
+}
 /* 多镜像竞速：同一个文件同时打所有可用镜像，最先返回有效内容的胜出。
    单源超时不再串行叠加；连续失败的镜像降权，避免死源把每个音都拖一遍。
    胜出后中止其余请求，防止几个 2~3MB 的音色包继续占带宽。 */
 const MIRROR_FAIL={},MIRROR_WIN={};
 const MIRROR_MAXFAIL=2;
-function firstMirror(bases,path,ms,asText,validate){
+function raceMirrors(bases,path,ms,asText,validate){
   var group=bases[0]||'',alive=[],i;
   for(i=0;i<bases.length;i++)if((MIRROR_FAIL[bases[i]]||0)<MIRROR_MAXFAIL)alive.push(bases[i]);
   if(!alive.length)alive=bases.slice();
@@ -2019,6 +2098,16 @@ function firstMirror(bases,path,ms,asText,validate){
     });
   }
   return race(alive);
+}
+/* 先查本地持久缓存：命中就直接返回，连 fetch 都不发；
+   未命中才走镜像竞速，成功后写回缓存。 */
+async function firstMirror(bases,path,ms,asText,validate){
+  const key=(asText?'T:':'B:')+path;
+  const hit=await sampleCacheGet(key);
+  if(hit!=null&&(!validate||validate(hit)))return {data:hit,base:'local',url:'local:'+path,cached:true};
+  const out=await raceMirrors(bases,path,ms,asText,validate);
+  await sampleCachePut(key,out.data);
+  return out;
 }
 function pickSpread(list,want){
   const n=list.length;
@@ -2272,6 +2361,8 @@ window.SWSAMPLE={
   },
   ready:sampleReady,
   load:function(k,force){return loadSampleInstrument(k,!!force);},
+  cache:sampleCacheStats,
+  clearCache:sampleCacheClear,
   update:updateSampleBar,
   bar:function(){
     var e=document.getElementById('sampBar'),s=document.getElementById('sampState');
