@@ -400,6 +400,30 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
  border-radius:6px;font-size:9.5px;padding:3px;width:94%;margin-bottom:8px;outline:none;cursor:pointer;
 }
 .chord-card select option{background:#131924;color:#eef2f7}
+/* 调内七张卡片 + 旁边一组离调和弦 */
+.chord-cards-row{display:grid;grid-template-columns:minmax(0,1fr) 216px;gap:10px;align-items:start}
+.chord-cards-row .chords-grid{min-width:0}
+.borrowed-box{box-sizing:border-box;margin-top:14px;padding:9px 10px 10px;
+  border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.025)}
+.borrowed-title{margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:6px;
+  font-size:11px;font-weight:700;color:var(--text-main)}
+.borrowed-title span{font-size:9.5px;font-weight:400;color:var(--text-dim)}
+.borrowed-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.sw-borrow-btn{box-sizing:border-box;min-width:0;min-height:36px!important;padding:3px 4px;
+  border-radius:7px;cursor:pointer;border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.045);color:var(--text-muted);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.sw-borrow-btn b{font-size:10.5px;font-weight:800;line-height:1.1;color:var(--text-main);white-space:nowrap}
+.sw-borrow-btn i{font-size:9px;font-weight:600;line-height:1.1;font-style:normal;color:var(--accent-sec);white-space:nowrap}
+.sw-borrow-btn:hover{border-color:rgba(126,231,199,.5)}
+.sw-borrow-btn.active{background:rgba(126,231,199,.18);border-color:rgba(126,231,199,.7)}
+@media(max-width:900px){
+  .chord-cards-row{grid-template-columns:1fr}
+  .borrowed-box{margin-top:4px}
+  .borrowed-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sw-borrow-btn{min-height:38px!important}
+}
 
 /* ---------- 键盘 ---------- */
 .piano-wrapper{
@@ -428,6 +452,14 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
  color:var(--accent);border:1px solid #000;z-index:2;font-size:10.5px;
  box-shadow:0 4px 8px rgba(0,0,0,.6),inset 0 -3px 6px rgba(255,255,255,.06);
 }
+/* 不在当前音阶内的键统一压成灰色；只改显示，按下照常发声。
+   .key.active / .key.chord-lit 定义在后面，按下与和弦高亮仍会盖过灰色。 */
+.key.white.sw-out-scale{background:linear-gradient(180deg,#aeb6bd,#949ca5 88%,#818a92)!important;
+  color:#4b525a!important;border-color:#7d858e!important;
+  box-shadow:inset 0 -5px 8px rgba(0,0,0,.10),0 2px 3px rgba(0,0,0,.22)!important}
+.key.black.sw-out-scale{background:linear-gradient(180deg,#697179,#4c535b 70%,#3a4046)!important;
+  color:#cbd3da!important;border-color:#2a2f34!important;
+  box-shadow:0 3px 6px rgba(0,0,0,.38)!important}
 .key.active{background:linear-gradient(180deg,#7dffc0,var(--accent) 70%,#00b55f)!important;color:#03130a!important;box-shadow:0 0 18px rgba(0,230,118,.55)!important}
 /* 和弦区按下的和弦，在键盘上高亮成蓝色，方便课堂演示 */
 .key.chord-lit{background:linear-gradient(180deg,#8ad8ff,var(--accent-sec) 70%,#0077b3)!important;color:#001523!important;box-shadow:0 0 16px rgba(0,176,255,.6)!important;z-index:3}
@@ -864,7 +896,104 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
   animation:swBootSpin .8s linear infinite}
 @keyframes swBootSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 </style>
-<!-- /SWBOOT CSS -->
+<!-- /SWBOOT CSS --><!-- SWAQ CSS -->
+<style id="swAqCss">
+/* v3AQ 显示调整：① 快捷键盘吸底 ② 手机工具栏紧凑 ③ 和弦区左列补齐 */
+.sw-tools-btn{
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);
+  color:var(--text-main);border-radius:9px;padding:9px 12px;
+  font:800 11.5px/1 inherit;cursor:pointer;white-space:nowrap;min-height:36px;
+  display:none;align-items:center;gap:5px;
+}
+.sw-tools-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(0,230,118,.12)}
+@media(max-width:900px){.sw-tools-btn{display:inline-flex}}
+body.sw-compact-tools .project-bar,
+body.sw-compact-tools .sw-metro-module{display:none!important}
+
+/* 快捷键盘：独立的固定条，不改动原 #piano 的位置与尺寸 */
+.sw-kb-dock{
+  position:fixed;left:8px;right:8px;bottom:10px;z-index:870;
+  display:none;flex-direction:column;gap:5px;
+  padding:6px 8px;border-radius:13px;
+  background:rgba(10,14,20,.975);backdrop-filter:blur(12px);
+  border:1px solid rgba(0,176,255,.28);
+  box-shadow:0 -10px 34px rgba(0,0,0,.62);
+}
+body.sw-kbdock .sw-kb-dock{display:flex}
+.sw-kb-dock-head{display:flex;align-items:center;gap:10px;min-height:26px;
+  font-size:11px;font-weight:800;color:var(--text-main);white-space:nowrap}
+.sw-kb-dock-head span{opacity:.85}
+.sw-kb-dock-chk{margin-left:auto;display:flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:600;color:var(--text-muted);cursor:pointer;white-space:nowrap}
+.sw-kb-dock-chk input{width:15px;height:15px;accent-color:var(--accent);flex:0 0 15px}
+.sw-kb-dock-x{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);
+  color:var(--text-muted);border-radius:7px;min-height:26px;min-width:26px;
+  cursor:pointer;font-size:11px;font-weight:800}
+#swKbDockPeek{display:none}
+.sw-dock-wrap{padding:2px 4px!important;margin:0!important}
+.sw-dock-piano{height:104px!important}
+.sw-dock-piano .key.white{height:104px!important}
+.sw-dock-piano .key.black{height:66px!important}
+.sw-dock-piano .key.white,.sw-dock-piano .key.black{font-size:9px;padding-bottom:3px}
+body.sw-kbdock{padding-bottom:190px!important}
+@media(max-width:900px){
+  .sw-kb-dock{bottom:calc(76px + env(safe-area-inset-bottom))}
+  body.sw-kbdock{padding-bottom:calc(230px + env(safe-area-inset-bottom))!important}
+}
+body.fl-rot .sw-kb-dock{display:none!important}
+body.fl-rot.sw-kbdock{padding-bottom:calc(84px + env(safe-area-inset-bottom))!important}
+
+/* 和弦区：左列 = 七张卡片 + 常用和弦进行，右列 = 离调和弦 */
+.chord-left{min-width:0;display:flex;flex-direction:column;gap:10px;align-self:stretch}
+.chord-left .progression-panel{margin-top:auto}
+/* 中间宽度（901~1100）左列会和弦进行换行变高，让两列等高并各自填满 */
+@media(min-width:901px){
+  .chord-cards-row{align-items:stretch}
+  #borrowedChordBox{display:flex;flex-direction:column}
+  #borrowedChordBox .borrowed-grid{flex:1 1 auto;grid-template-rows:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  .chord-left{display:contents}
+  .chord-left .chords-grid{order:1;margin-top:14px}
+  #borrowedChordBox{order:2}
+  .chord-left .progression-panel{order:3;margin-top:13px}
+}
+
+/* 短屏（手机横屏）专用：视口高度不足时把吸底条压薄并贴到标签栏上沿，
+   否则 104px 键盘会盖住半个屏幕，工程栏 / 步进器 / 独奏按钮都点不到。 */
+@media(max-width:900px) and (max-height:480px){
+  .sw-kb-dock{bottom:56px;bottom:calc(56px + env(safe-area-inset-bottom));
+    gap:3px;padding:4px 6px}
+  .sw-kb-dock-head{min-height:22px;font-size:10px}
+  .sw-kb-dock-chk{font-size:9.5px}
+  .sw-kb-dock-x{min-height:22px;min-width:22px}
+  .sw-dock-piano{height:56px!important}
+  .sw-dock-piano .key.white{height:56px!important}
+  .sw-dock-piano .key.black{height:36px!important}
+  .sw-dock-piano .key.white,.sw-dock-piano .key.black{font-size:8px;padding-bottom:2px}
+  body.sw-kbdock{padding-bottom:150px!important;
+    padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}
+}
+
+/* 极短视口（横屏 + 浏览器工具栏 / 分屏）：吸底条默认收成薄片，
+   点 ⌨ 才临时展开紧凑键盘，避免和底部标签栏一起把内容区挤没了。 */
+@media(max-width:900px) and (max-height:320px){
+  .sw-kb-dock{flex-direction:row;align-items:center;gap:6px;padding:3px 7px;
+    bottom:56px;bottom:calc(56px + env(safe-area-inset-bottom))}
+  .sw-kb-dock-head{flex:1 1 auto;min-width:0;gap:6px}
+  .sw-kb-dock-head>span{overflow:hidden;text-overflow:ellipsis}
+  .sw-kb-dock .sw-dock-wrap{display:none}
+  #swKbDockPeek{display:inline-flex;align-items:center;justify-content:center}
+  body.sw-aq-peek .sw-kb-dock{flex-direction:column;align-items:stretch}
+  body.sw-aq-peek .sw-kb-dock .sw-dock-wrap{display:block}
+  body.sw-kbdock{padding-bottom:110px!important;
+    padding-bottom:calc(110px + env(safe-area-inset-bottom))!important}
+  body.sw-aq-peek.sw-kbdock{padding-bottom:170px!important;
+    padding-bottom:calc(170px + env(safe-area-inset-bottom))!important}
+}
+
+</style>
+<!-- /SWAQ CSS -->
 </head>
 <body>
 <!-- SWBOOT MASK -->
@@ -932,7 +1061,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
           <p>和弦区的 <strong>📘 乐理课堂</strong> 按钮，点一下才展开教学模块（再点一次收起）。七个标签按<strong>从零件到整体</strong>的顺序排列：<strong>① 音程</strong>（半音数 / 名称 / 协和度 + 音程转位三条规律）、<strong>② 音阶与调式</strong>（当前音阶、调内七级数、七种调式对比，可一键切换全站调式）、<strong>③ 和弦怎么搭出来</strong>（三度叠置，可现场拼和弦）、<strong>④ 常用和弦的区别</strong>（十种和弦逐个试听）、<strong>⑤ 和弦转位</strong>（原位 / 第一 / 第二转位、分数和弦 C/E、低音级进示例）、<strong>⑥ 主 · 下属 · 属（T / S / D）</strong>（功能和声与四种终止式）、<strong>⑦ 和弦连接与进行</strong>（声部进行规矩 + 常见进行可写入 DAW 轨2）。所有例子都跟着当前的<strong>主音 + 调式</strong>自动移调。</p>
 
           <h4>⑮ 调式 / 音阶</h4>
-          <p>和弦区除了选<strong>主音</strong>（C、D、E…），还能选<strong>调式</strong>：大调、自然小调、和声小调、旋律小调、五声音阶（宫 / 羽）、Blues 音阶。切换后七个级数的名称与性质会整体改变（大调是 I–ii–iii–IV–V–vi–vii°，自然小调是 i–ii°–III–iv–v–VI–VII），和弦卡片、Step 轨2、乐理课堂的例子全部跟着变。五声音阶与 Blues 本身凑不出七个三和弦，所以和弦沿用母调的级数。</p>
+          <p>和弦区除了选<strong>主音</strong>（C、D、E…），还能选<strong>调式</strong>：大调、自然小调、和声小调、旋律小调、五声音阶（宫 / 羽）、Blues 音阶。切换后七个级数的名称与性质会整体改变（大调是 I–ii–iii–IV–V–vi–vii°，自然小调是 i–ii°–III–iv–v–VI–VII），和弦卡片、Step 轨2、乐理课堂的例子全部跟着变。五声音阶与 Blues 本身凑不出七个三和弦，所以和弦沿用母调的级数。键盘上不在当前音阶内的键会显示成灰色，仍可正常发声。</p>
 
           <h4>⑯ Swing / Shuffle 摇摆</h4>
           <p>DAW 控制条里的 <strong>Swing</strong> 开关 + 摇摆量滑杆，把每一拍的后半拍往后推，做出摇摆感（0% = 完全平均，100% = 三连音摇摆）。DAW 与 Step 同时生效，播放中拖动会立刻跟着变，播放头也会跟着一起摆。</p>
@@ -1069,7 +1198,11 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
   </section>
 
   <section class="ws-view" id="viewChord" data-view="chord">
-  <div class="module"><div class="chord-top"><h3 class="module-title" style="margin:0">智能和弦系统 + 琶音器 <span class="help-btn" onclick="showHelp('CHORD')">❓</span></h3><div class="toolbar"><label style="font-size:12px;cursor:pointer"><input type="checkbox" id="toggleVoiceLeading" checked> 平滑就近连接</label><select id="keySelect" class="styled-sel" title="主音（调性）"><option value="0">C</option><option value="1">C♯/D♭</option><option value="2">D</option><option value="3">D♯/E♭</option><option value="4">E</option><option value="5">F</option><option value="6">F♯/G♭</option><option value="7">G</option><option value="8">G♯/A♭</option><option value="9">A</option><option value="10">A♯/B♭</option><option value="11">B</option></select><select id="scaleSelect" class="styled-sel" title="调式 / 音阶：决定七个级数的名称与和弦性质"><option value="major" selected>大调 Major</option><option value="natminor">自然小调 Natural Minor</option><option value="harmminor">和声小调 Harmonic Minor</option><option value="melminor">旋律小调 Melodic Minor</option><option value="pentmaj">五声音阶（宫 · 大调五声）</option><option value="pentmin">五声音阶（羽 · 小调五声）</option><option value="blues">Blues 音阶</option></select></div></div><div class="chord-arp-controls"><span style="font-size:11px;color:var(--text-muted)">和弦播放方式</span><select id="chordPlayStyle" class="styled-sel"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><span style="font-size:11px;color:var(--text-muted)">琶音速度</span><select id="arpRate" class="styled-sel"><option value="0.0625">64分音符</option><option value="0.125">32分音符</option><option value="0.25" selected>16分音符</option><option value="0.5">8分音符</option><option value="1">4分音符</option></select><span style="font-size:11px;color:var(--text-muted)">快慢</span><input type="range" id="arpSpeed" min="0.25" max="4" step="0.05" value="1" style="width:96px" title="琶音快慢倍率：向左拖 = 更慢，向右拖 = 更快（0.25× ~ 4×）"><span id="arpSpeedVal" class="val-box">1.00×</span><button id="btnCustomChord" class="btn small">🎛 自定义和弦</button><button id="btnChordTeach" class="btn small" title="展开 / 收起「和弦课堂」教学模块">📘 乐理课堂</button></div><div class="chords-grid" id="chordsGrid"></div>
+  <div class="module"><div class="chord-top"><h3 class="module-title" style="margin:0">智能和弦系统 + 琶音器 <span class="help-btn" onclick="showHelp('CHORD')">❓</span></h3><div class="toolbar"><label style="font-size:12px;cursor:pointer"><input type="checkbox" id="toggleVoiceLeading" checked> 平滑就近连接</label><select id="keySelect" class="styled-sel" title="主音（调性）"><option value="0">C</option><option value="1">C♯/D♭</option><option value="2">D</option><option value="3">D♯/E♭</option><option value="4">E</option><option value="5">F</option><option value="6">F♯/G♭</option><option value="7">G</option><option value="8">G♯/A♭</option><option value="9">A</option><option value="10">A♯/B♭</option><option value="11">B</option></select><select id="scaleSelect" class="styled-sel" title="调式 / 音阶：决定七个级数的名称与和弦性质"><option value="major" selected>大调 Major</option><option value="natminor">自然小调 Natural Minor</option><option value="harmminor">和声小调 Harmonic Minor</option><option value="melminor">旋律小调 Melodic Minor</option><option value="pentmaj">五声音阶（宫 · 大调五声）</option><option value="pentmin">五声音阶（羽 · 小调五声）</option><option value="blues">Blues 音阶</option></select></div></div><div class="chord-arp-controls"><span style="font-size:11px;color:var(--text-muted)">和弦播放方式</span><select id="chordPlayStyle" class="styled-sel"><option value="block" selected>柱式（同时）</option><option value="up">琶音 · 上行</option><option value="down">琶音 · 下行</option><option value="updown">琶音 · 上下往返</option><option value="random">琶音 · 随机</option></select><span style="font-size:11px;color:var(--text-muted)">琶音速度</span><select id="arpRate" class="styled-sel"><option value="0.0625">64分音符</option><option value="0.125">32分音符</option><option value="0.25" selected>16分音符</option><option value="0.5">8分音符</option><option value="1">4分音符</option></select><span style="font-size:11px;color:var(--text-muted)">快慢</span><input type="range" id="arpSpeed" min="0.25" max="4" step="0.05" value="1" style="width:96px" title="琶音快慢倍率：向左拖 = 更慢，向右拖 = 更快（0.25× ~ 4×）"><span id="arpSpeedVal" class="val-box">1.00×</span><button id="btnCustomChord" class="btn small">🎛 自定义和弦</button><button id="btnChordTeach" class="btn small" title="展开 / 收起「和弦课堂」教学模块">📘 乐理课堂</button></div><div class="chord-cards-row"><div class="chords-grid" id="chordsGrid"></div>
+    <div class="borrowed-box" id="borrowedChordBox">
+      <div class="borrowed-title">离调和弦 <span>按住试听 · 松开停止</span></div>
+      <div class="borrowed-grid" id="borrowedChordGrid"></div>
+    </div></div>
 
     <div class="chord-teach" id="chordTeach" style="display:none">
       <div class="teach-head">
@@ -1113,7 +1246,7 @@ input[type=range]::-moz-range-thumb{height:14px;width:14px;border-radius:50%;bac
   </div>
   </section>
 
-  <div class="module"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3 class="module-title" style="margin:0">键盘 · 实时显示 <span class="help-btn" onclick="showHelp('KEYBOARD')">❓</span></h3><div class="toolbar"><label class="status-pill"><input type="checkbox" id="showSolfege" checked> 唱名</label><label class="status-pill"><input type="checkbox" id="showNoteName" checked> 音名</label><label class="status-pill" title="在和弦区按下和弦时，键盘自动整体挪八度，让这些音尽量显示在正中间"><input type="checkbox" id="autoCenterKeyboard" checked> 和弦自动居中</label><span class="status-pill">调性：<span id="keyboardKeyName">C 大调</span></span><button class="btn small" onclick="shiftKeyboardOct(-1)">-1 八度</button><button class="btn small" onclick="shiftKeyboardOct(1)">+1 八度</button><button class="btn small" onclick="shiftKeyboardTranspose(-1)" title="整体下移一个半音">♭ 移调 −</button><span id="transposeVal" class="val-box">0</span><button class="btn small" onclick="shiftKeyboardTranspose(1)" title="整体上移一个半音">移调 + ♯</button><button class="btn small" onclick="resetKeyboardTranspose()">移调归零</button><button id="btnBendToggle" class="btn small" title="打开/关闭弯音轮">🎛 弯音轮</button></div></div>
+  <div class="module"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3 class="module-title" style="margin:0">键盘 · 实时显示 <span class="help-btn" onclick="showHelp('KEYBOARD')">❓</span></h3><div class="toolbar"><label class="status-pill"><input type="checkbox" id="showSolfege" checked> 唱名</label><label class="status-pill"><input type="checkbox" id="showNoteName" checked> 音名</label><label class="status-pill" title="调内音保持原配色，不在当前音阶内的键显示灰色；灰键仍可发声"><input type="checkbox" id="showScaleTint" checked> 调内音显示</label><label class="status-pill" title="在和弦区按下和弦时，键盘自动整体挪八度，让这些音尽量显示在正中间"><input type="checkbox" id="autoCenterKeyboard" checked> 和弦自动居中</label><span class="status-pill">调性：<span id="keyboardKeyName">C 大调</span></span><button class="btn small" onclick="shiftKeyboardOct(-1)">-1 八度</button><button class="btn small" onclick="shiftKeyboardOct(1)">+1 八度</button><button class="btn small" onclick="shiftKeyboardTranspose(-1)" title="整体下移一个半音">♭ 移调 −</button><span id="transposeVal" class="val-box">0</span><button class="btn small" onclick="shiftKeyboardTranspose(1)" title="整体上移一个半音">移调 + ♯</button><button class="btn small" onclick="resetKeyboardTranspose()">移调归零</button><button id="btnBendToggle" class="btn small" title="打开/关闭弯音轮">🎛 弯音轮</button></div></div>
     <div id="bendBar" class="bend-bar" style="display:none"><span style="font-size:11px;color:var(--text-muted)">弯音</span><input type="range" id="bendSlider" min="-200" max="200" step="1" value="0" style="width:220px"><span id="bendVal" class="val-box">0 音分</span><button id="btnBendCenter" class="btn small">回中</button><label class="status-pill"><input type="checkbox" id="bendAutoCenter" checked> 松手自动回中</label><span style="font-size:11px;color:var(--text-muted)">±200 音分 = ±2 半音，拖动时正在发声的音会实时跟着推拉</span></div>
     <div class="piano-wrapper"><div class="piano" id="piano"></div></div><div class="piano-hint" id="pianoHint">← 键盘较宽，可左右滑动查看 →</div></div>
 
@@ -1453,20 +1586,62 @@ const SCALE_DEFS={
   desc:'在小调五声基础上加一个 ♭5（"蓝调音"），那个滑腻的"哭腔"味道就来自它。和弦沿用大调级数（Blues 通常在大调上混用小调音阶）。'
  }
 };
+/* ---------------- 和弦类型全集 ----------------
+   每一个调内级数都选同一套类型；g 只用于下拉分组，不参与发声。
+   triad 保留旧 key，内容仍是该级数在当前调式里的调内三和弦，存档与旧探针都能继续用。 */
+const CHORD_TYPE_DEFS=[
+ {k:'maj',      label:'Maj',     name:'大三和弦',        iv:[0,4,7],          g:'三和弦'},
+ {k:'min',      label:'m',       name:'小三和弦',        iv:[0,3,7],          g:'三和弦'},
+ {k:'aug',      label:'aug',     name:'增三和弦',        iv:[0,4,8],          g:'三和弦'},
+ {k:'dim',      label:'dim',     name:'减三和弦',        iv:[0,3,6],          g:'三和弦'},
+ {k:'sus4',     label:'sus4',    name:'挂四和弦',        iv:[0,5,7],          g:'挂留 / 六 / 强力'},
+ {k:'sus2',     label:'sus2',    name:'挂二和弦',        iv:[0,2,7],          g:'挂留 / 六 / 强力'},
+ {k:'six',      label:'6',       name:'大六和弦',        iv:[0,4,7,9],        g:'挂留 / 六 / 强力'},
+ {k:'min6',     label:'m6',      name:'小六和弦',        iv:[0,3,7,9],        g:'挂留 / 六 / 强力'},
+ {k:'power',    label:'5',       name:'强力和弦',        iv:[0,7,12],         g:'挂留 / 六 / 强力'},
+ {k:'maj7',     label:'Maj7',    name:'大七和弦',        iv:[0,4,7,11],       g:'七和弦'},
+ {k:'min7',     label:'m7',      name:'小七和弦',        iv:[0,3,7,10],       g:'七和弦'},
+ {k:'dom7',     label:'7',       name:'属七和弦',        iv:[0,4,7,10],       g:'七和弦'},
+ {k:'dim7',     label:'dim7',    name:'减七和弦',        iv:[0,3,6,9],        g:'七和弦'},
+ {k:'halfdim7', label:'m7♭5',    name:'半减七和弦',      iv:[0,3,6,10],       g:'七和弦'},
+ {k:'minmaj7',  label:'mMaj7',   name:'小大七和弦',      iv:[0,3,7,11],       g:'七和弦'},
+ {k:'maj7s5',   label:'Maj7♯5',  name:'大七升五和弦',    iv:[0,4,8,11],       g:'七和弦'},
+ {k:'maj9',     label:'Maj9',    name:'大九和弦',        iv:[0,4,7,11,14],    g:'九和弦'},
+ {k:'m9',       label:'m9',      name:'小九和弦',        iv:[0,3,7,10,14],    g:'九和弦'},
+ {k:'dom9',     label:'9',       name:'属九和弦',        iv:[0,4,7,10,14],    g:'属七变化与延伸'},
+ {k:'dom7b9',   label:'7♭9',     name:'属七降九和弦',    iv:[0,4,7,10,13],    g:'属七变化与延伸'},
+ {k:'dom7s9',   label:'7♯9',     name:'属七升九和弦',    iv:[0,4,7,10,15],    g:'属七变化与延伸'},
+ {k:'dom7b5',   label:'7♭5',     name:'属七降五和弦',    iv:[0,4,6,10],       g:'属七变化与延伸'},
+ {k:'dom7s5',   label:'7♯5',     name:'属七升五和弦',    iv:[0,4,8,10],       g:'属七变化与延伸'},
+ {k:'dom7sus4', label:'7sus4',   name:'属七挂四和弦',    iv:[0,5,7,10],       g:'属七变化与延伸'},
+ {k:'dom11',    label:'11',      name:'属十一和弦',      iv:[0,4,7,10,14,17], g:'属七变化与延伸'},
+ {k:'dom13',    label:'13',      name:'属十三和弦',      iv:[0,4,7,10,14,21], g:'属七变化与延伸'},
+ {k:'domalt',   label:'7alt',    name:'变化属和弦 ♯5♯9', iv:[0,4,8,10,15],    g:'属七变化与延伸'}
+];
+const CHORD_TRIAD_IV={major:[0,4,7],minor:[0,3,7],dominant:[0,4,7],diminished:[0,3,6],augmented:[0,4,8]};
+const CHORD_TRIAD_LABEL={major:['Maj','大三和弦'],minor:['m','小三和弦'],dominant:['Maj','大三和弦'],diminished:['dim','减三和弦'],augmented:['aug','增三和弦']};
+function fullVariantSet(q){
+  const q2=CHORD_TRIAD_IV[q]?q:'major';
+  const ti=CHORD_TRIAD_IV[q2],tl=CHORD_TRIAD_LABEL[q2],out={};
+  out.triad={label:tl[0],name:tl[1],intervals:ti.slice(),g:'三和弦'};
+  CHORD_TYPE_DEFS.forEach(d=>{
+    /* 与调内默认同音程的类型不再重复列一个同名选项 */
+    if(d.iv.join(',')===ti.join(','))return;
+    out[d.k]={label:d.label,name:d.name,intervals:d.iv.slice(),g:d.g};
+  });
+  return out;
+}
 const CHORD_VARIANT_SETS={
- major:{triad:{label:'Maj',name:'大三和弦',intervals:[0,4,7]},maj7:{label:'Maj7',name:'大七和弦',intervals:[0,4,7,11]},maj9:{label:'Maj9',name:'大九和弦',intervals:[0,4,7,11,14]},sus2:{label:'sus2',name:'挂二和弦',intervals:[0,2,7]},sus4:{label:'sus4',name:'挂四和弦',intervals:[0,5,7]}},
- minor:{triad:{label:'m',name:'小三和弦',intervals:[0,3,7]},min7:{label:'m7',name:'小七和弦',intervals:[0,3,7,10]},m9:{label:'m9',name:'小九和弦',intervals:[0,3,7,10,14]},sus2:{label:'sus2',name:'挂二和弦',intervals:[0,2,7]},sus4:{label:'sus4',name:'挂四和弦',intervals:[0,5,7]}},
- dominant:{triad:{label:'Maj',name:'大三和弦',intervals:[0,4,7]},dom7:{label:'7',name:'属七和弦',intervals:[0,4,7,10]},dom9:{label:'9',name:'属九和弦',intervals:[0,4,7,10,14]},sus2:{label:'sus2',name:'挂二和弦',intervals:[0,2,7]},sus4:{label:'sus4',name:'挂四和弦',intervals:[0,5,7]}},
- diminished:{triad:{label:'dim',name:'减三和弦',intervals:[0,3,6]},halfdim7:{label:'m7♭5',name:'半减七和弦',intervals:[0,3,6,10]},dim7:{label:'dim7',name:'减七和弦',intervals:[0,3,6,9]}},
- augmented:{triad:{label:'aug',name:'增三和弦',intervals:[0,4,8]},maj7:{label:'Maj7♯5',name:'大七升五和弦',intervals:[0,4,8,11]},sus2:{label:'sus2',name:'挂二和弦',intervals:[0,2,7]},sus4:{label:'sus4',name:'挂四和弦',intervals:[0,5,7]}}
+ major:fullVariantSet('major'),minor:fullVariantSet('minor'),
+ dominant:fullVariantSet('dominant'),diminished:fullVariantSet('diminished'),
+ augmented:fullVariantSet('augmented')
 };
-const FALLBACK_VARIANTS={
- major:[['triad','Maj · 大三和弦'],['maj7','Maj7 · 大七和弦'],['maj9','Maj9 · 大九和弦'],['sus2','sus2 · 挂二和弦'],['sus4','sus4 · 挂四和弦']],
- minor:[['triad','m · 小三和弦'],['min7','m7 · 小七和弦'],['m9','m9 · 小九和弦'],['sus2','sus2 · 挂二和弦'],['sus4','sus4 · 挂四和弦']],
- dominant:[['triad','Maj · 大三和弦'],['dom7','7 · 属七和弦'],['dom9','9 · 属九和弦'],['sus2','sus2 · 挂二和弦'],['sus4','sus4 · 挂四和弦']],
- diminished:[['triad','dim · 减三和弦'],['halfdim7','m7♭5 · 半减七和弦'],['dim7','dim7 · 减七和弦']],
- augmented:[['triad','aug · 增三和弦'],['maj7','Maj7♯5 · 大七升五和弦']]
-};
+const FALLBACK_VARIANTS={};
+Object.keys(CHORD_VARIANT_SETS).forEach(function(q){
+ FALLBACK_VARIANTS[q]=Object.keys(CHORD_VARIANT_SETS[q]).map(function(k){
+  const v=CHORD_VARIANT_SETS[q][k];return [k,v.label+' · '+v.name];
+ });
+});
 // 五声 / Blues 的和弦借用哪个调式
 const SCALE_CHORD_PARENT={pentmaj:'major',pentmin:'natminor',blues:'major'};
 function currentScaleKey(){
@@ -3014,16 +3189,28 @@ function updateChords(){
   degSpan.textContent=String(dict.degree||'');
   const selEl=document.createElement('select');
   selEl.setAttribute('aria-label',String(dict.degree||'')+' 和弦类型');
+  /* 类型全集按组铺开：三和弦 / 七和弦 / 属七变化 / 九和弦 / 挂留 / 自定义 */
+  const groups={},gorder=[];
   Object.entries(variants).forEach(([key,v])=>{
-   const o=document.createElement('option');
-   o.value=key;
-   o.textContent=String((v&&v.label)||'')+' · '+String((v&&v.name)||'');
-   selEl.appendChild(o);
+   const g=String((v&&v.g)||'其它');
+   if(!groups[g]){groups[g]=[];gorder.push(g)}
+   groups[g].push([key,v]);
   });
+  gorder.forEach(g=>{
+   const og=document.createElement('optgroup');og.label=g;
+   groups[g].forEach(([key,v])=>{
+    const o=document.createElement('option');
+    o.value=key;
+    o.textContent=String((v&&v.label)||'')+' · '+String((v&&v.name)||'');
+    og.appendChild(o);
+   });
+   selEl.appendChild(og);
+  });
+  const cg=document.createElement('optgroup');cg.label='自定义';
   const cOpt=document.createElement('option');
   cOpt.value='custom';
   cOpt.textContent=dict.custom?'custom · 编辑自定义':'custom · 新建自定义';
-  selEl.appendChild(cOpt);
+  cg.appendChild(cOpt);selEl.appendChild(cg);
   const nameSpan=document.createElement('span');
   nameSpan.style.cssText='font-size:15px;font-weight:900';
   nameSpan.textContent=rootName+(structure.label==='Maj'?'':String(structure.label||''));
@@ -3058,6 +3245,52 @@ function updateChords(){
    startChordPerformance(notes);
   },finish);
   grid.appendChild(card);
+ });
+ updateBorrowedChords();
+}
+
+/* ---------------- 离调和弦 ----------------
+   root 是相对当前主音的半音偏移；iv 是相对该和弦根音的音程。
+   按钮按住发声、松开停止，与调内卡片走同一套琶音 / 柱式播放方式。 */
+const BORROWED_NOTE_NAMES=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const BORROWED_CHORDS=[
+ {d:'♭III', r:3,  q:'',    iv:[0,4,7],      tip:'同主小调借用'},
+ {d:'♭VI',  r:8,  q:'',    iv:[0,4,7],      tip:'同主小调借用'},
+ {d:'♭VII', r:10, q:'',    iv:[0,4,7],      tip:'混合利底亚借用'},
+ {d:'iv',   r:5,  q:'m',   iv:[0,3,7],      tip:'同主小调借用'},
+ {d:'iv7',  r:5,  q:'m7',  iv:[0,3,7,10],   tip:'同主小调借用'},
+ {d:'♭II',  r:1,  q:'',    iv:[0,4,7],      tip:'那不勒斯和弦'},
+ {d:'♯IV°', r:6,  q:'dim', iv:[0,3,6],      tip:'经过减和弦'},
+ {d:'V/V',  r:2,  q:'7',   iv:[0,4,7,10],   tip:'重属七和弦'},
+ {d:'V/IV', r:0,  q:'7',   iv:[0,4,7,10],   tip:'副属七和弦'},
+ {d:'V/vi', r:4,  q:'7',   iv:[0,4,7,10],   tip:'副属七和弦'},
+ {d:'V/ii', r:9,  q:'7',   iv:[0,4,7,10],   tip:'副属七和弦'},
+ {d:'♭II7', r:1,  q:'7',   iv:[0,4,7,10],   tip:'三全音代理'}
+];
+function currentKeyRoot(){const e=document.getElementById('keySelect');return Number(e?e.value:0)||0}
+function borrowedChordName(b){return BORROWED_NOTE_NAMES[((currentKeyRoot()+b.r)%12+12)%12]+b.q}
+function borrowedChordNotes(b){
+ return b.iv.map(iv=>48+currentKeyRoot()+b.r+iv+(trackOctOffsets.chord||0)*12);
+}
+function updateBorrowedChords(){
+ const grid=document.getElementById('borrowedChordGrid');if(!grid)return;
+ grid.innerHTML='';
+ BORROWED_CHORDS.forEach((b,i)=>{
+  const btn=document.createElement('button');
+  btn.type='button';btn.className='sw-borrow-btn';btn.dataset.bi=String(i);
+  btn.title=b.tip+' · '+borrowedChordName(b);
+  const t=document.createElement('b');t.textContent=b.d;
+  const n=document.createElement('i');n.textContent=borrowedChordName(b);
+  btn.append(t,n);
+  bindPress(btn,()=>{
+   initAudio();stopChordPerformance();
+   btn.classList.add('active');
+   const notes=borrowedChordNotes(b);
+   lastChordNotes=notes.slice();
+   startChordPerformance(notes);
+   if(typeof litChordKeys==='function')litChordKeys(notes);
+  },()=>{btn.classList.remove('active');stopChordPerformance();});
+  grid.appendChild(btn);
  });
 }
 
@@ -4426,7 +4659,7 @@ function zeroTrackParams(){const t=currentEditingTrack;Object.assign(trackParams
 // 参数重置：恢复该轨出厂默认参数。
 function resetTrackParams(){const t=currentEditingTrack;const def=DEFAULT_TRACK_PARAMS[t]||DEFAULT_TRACK_PARAMS.melody;trackParams[t]=JSON.parse(JSON.stringify(def));commitTrackParams(t);updateStripStatus('已重置 · '+(TRACK_CN[t]||t))}
 function resetAllTrackParams(){ALL_TRACKS.forEach(t=>{trackParams[t]=JSON.parse(JSON.stringify(DEFAULT_TRACK_PARAMS[t]));initAudio();applyLiveTrackParams(t)});commitTrackParams(currentEditingTrack);updateStripStatus('已重置 · 全部五条轨道')}
-function showHelp(type){const h={DAW:'DAW 是五轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组、轨5 Pad（氛围铺底）。播放时切换通道条不会停止其他轨道。\n\n轨5 Pad 的写法和轨2完全一样，填 1～7 的和弦级数即可；区别是它会自动把每个音拖到至少一拍长，配合「音色设置」里 Pad 默认的长 Release + 大混响，铺成一层持续的氛围。想更厚可以去「音色设置 → 轨5 PAD 氛围塑形」调叠加层数与失谐宽度。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；\n\n【快捷键】空格键 = 播放 / 停止。【节拍器】BPM 与全局音序器统一。【读谱导入】支持三种输入：上传简谱图片（OCR 自动识别，首次使用需联网加载识别引擎）、上传 .txt 文本、直接粘贴文本；识别后会自动清洗成上面的 DAW 语法（去歌词、补空格、识别调号与速度），可手动修正后再写入轨道。注意：图片识别只能读出音符数字，八分音符的下划线、高低音点这类信息识别不出来，需要在下方补 [1 2]、1\'、1,。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复五条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；轨5 Pad 另有一组「Pad 氛围音色」（温暖 Pad / 玻璃 Pad / 人声 Pad / 弦乐 Pad）。选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。\n\n【LFO 低频振荡器】LFO 是一条很慢的振荡器，周期性推动你指定的参数。「调制目标」四种：滤波 Cutoff（最常用，持续扫频做出“呼吸感”）、音量 Volume（起伏 / 抖动）、音高 Pitch（颤音 Vibrato）、声像 Pan（左右飘移）。「速率」小于 1Hz = 缓慢呼吸，2~6Hz = 明显颤动，大于 8Hz = 金属感抖动。「深度」是推动幅度，「淡入延迟」让它在音符响一会儿之后才慢慢加入。「同步」把一圈锁在 1 / 2 / 4 拍上跟着 BPM 走。波形有正弦 / 三角 / 方波 / 锯齿 / 随机五种，下方小图实时画出当前波形。轨5 Pad 默认就挂着一条 0.35Hz 的慢滤波扫动。\n\n【轨5 Pad 氛围塑形】只有选中轨5时才出现：叠加层数（几层同时发声，越厚越宽）、失谐宽度（层与层之间错开多少音分，产生缓慢拍频）、高频微光（叠一个高八度的空气感）、亚低音（低八度正弦托底）、渐入 Swell（把起音拉长成缓慢淡入）、音色漂移（每层极缓慢地随机游走）。配合长 Release 与大混响，就是铺在整首曲子下面的那层“底噪”。\n\n【真实采样音色】音源下拉框上方有一个「真实采样音色」开关（默认开）。打开后，选到钢琴、小提琴、长笛这类真实乐器时，会自动联网下载真实乐器的录音采样来发声（和 GarageBand、FL Studio 内置音源是同一套原理：预录真实乐器的音，按音高变速回放），音质远比公式合成真实。第一次选某个乐器时会自动下载，状态栏会显示进度；下载成功会显示音源名（如「音乐会大钢琴」）。基础波形（锯齿 / 方波 / 三角波 / 正弦）和鼓组不需要采样。\n\n【两种音源】优先用的是高质量独奏录音（钢琴、管风琴、小提琴、大提琴、竖琴、民谣/尼龙/电吉他、长笛、单簧管、萨克斯、小号、低音提琴、电贝斯、簧风琴共 15 件），这些是真实乐器一个个音录下来的；电钢琴、马林巴、钟琴、二胡、古筝、人声合唱等没有独奏录音的，会自动退到通用 MIDI 音色库。\n\n想提前准备好就点「⬇ 预载常用」，会把钢琴、电钢琴、民谣吉他、电吉他、小提琴、大提琴、长笛、电贝斯这 8 件一次缓存好（约 10–15MB，建议上课前在 WiFi 下点一次），之后断网也能用。注意：采样音色下起音瞬态是真实录音自带的，所以 ADSR 的 A 影响很小（想完整演示 ADSR 包络，请把音源切到基础波形，或关掉这个开关）。如果状态栏显示红色警告，可以**点一下状态栏本身**重试；失败时会自动回退到合成音色，功能完全不受影响；关掉开关则是只用合成音色、完全不联网。\n\n【基础波形示波器】音源选到锯齿波 / 方波 / 三角波 / 正弦波这四种基础波形时，音源下拉框下方会出现两张小图：左边是时域波形（画 3 个周期），右边是频域谐波（1–16 次谐波的幅度）。换成钢琴、小提琴这类真实乐器音色时这两张图会自动隐藏。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。先在卡片下拉菜单选择和弦类型（如 Maj、m7、Maj7、7、9、Maj9、sus 和自定义），再按住卡片试听。级数名称会跟着上面的「调式」变（大调是 I ii iii IV V vi vii°，自然小调是 i ii° III iv v VI VII）。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。\n\n【试听与琶音】按住和弦卡片听连续琶音，松开停止：「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。当前 Key 会自动决定实际和弦名称（例如 C 大调中 I–V–vi–IV = C–G–Am–F），卡片当前选择的和弦类型也会沿用到轨2播放。\n\n【📘 乐理课堂】控制条最右边的按钮，点一下才展开教学模块（再点一次收起）：① 音程 ② 音阶与调式 ③ 和弦怎么搭出来 ④ 常用和弦的区别 ⑤ 和弦转位 ⑥ 主 / 下属 / 属功能和声 ⑦ 和弦连接与进行。所有例子跟着当前主音与调式走，点 ▶ 可以试听，试听时键盘会自动把这几个音居中高亮。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲→空），想直接清空就点芯片右边的 ✕，或者在芯片上点右键。\n\n【延音 ⏜】轨1/轨2/轨3 每个子拍右边有一个 ⏜ 按钮，点开（变绿、显示 ⏝）后这一格不再重新起音，而是把前一个音的时值往后延长——相当于简谱里的延音线，用来写长音和切分。再点一次取消。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【整轨移八度】轨1 / 轨2 / 轨3 左侧有「− ⧺ +」一组小按钮，可以整轨上下移动八度（和 DAW 里的八度徽章、快捷打谱面板是同一个值，三处联动）。轨4 鼓组没有音高，所以不显示。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），\n\n【格子怎么用】每格 = 一个起音位置，可独立选择音高与时值，四条轨道同时发声。常用和弦进行按钮会自动把进行填入轨2：默认每个和弦占 4 步，三和弦进行会自动延长最后一个和弦，八和弦进行按 16 步循环压缩。',KEYBOARD:'点击键盘即可实时发声。键盘固定显示三个八度（C3–C6），可以整体 ±1 八度。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。\n\n【和弦自动居中】勾选后（默认开），在和弦区按住任何和弦卡片，键盘会自动整体挪八度、让这几个音尽量落在正中间，并高亮成蓝色；松开即恢复。不想让键盘乱动就取消勾选，只用手动的 ±1 八度。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
+function showHelp(type){const h={DAW:'DAW 是五轨独立音频引擎：轨1旋律、轨2和弦、轨3贝斯、轨4鼓组、轨5 Pad（氛围铺底）。播放时切换通道条不会停止其他轨道。\n\n轨5 Pad 的写法和轨2完全一样，填 1～7 的和弦级数即可；区别是它会自动把每个音拖到至少一拍长，配合「音色设置」里 Pad 默认的长 Release + 大混响，铺成一层持续的氛围。想更厚可以去「音色设置 → 轨5 PAD 氛围塑形」调叠加层数与失谐宽度。\n\n每条轨道右侧有 S / M 两个小按钮：S = Solo（只播放这一轨，其他静音），M = Mute（只静音这一轨，其他不变）。多条同时 Solo 时，只有这些轨道发声。下面「实时编曲视图」里被静音的轨道图形会变暗。\n\n轨2和弦可以单独设置琶音：在控制条里选择「轨2和弦」= 柱式 / 上行 / 下行 / 上下往返 / 随机，并选择琶音时值（32分 / 16分 / 8分 / 4分）。例如写入「1 - 5 - | 6 - 3 -」并选择「上行 + 16分」，每个和弦就会在它占用的两拍里依次弹出。\n\n谱面语法：1 2 3 = 四分音符；[1 2] = 八分；[[1 2 3 4]] = 十六分；{1 2 3} = 三连音；1. = 附点（时值 ×1.5）；1\' = 高八度；1, = 低八度；- = 延音/空拍；\n\n【快捷键】空格键 = 播放 / 停止。【节拍器】BPM 与全局音序器统一。【读谱导入】支持三种输入：上传简谱图片（OCR 自动识别，首次使用需联网加载识别引擎）、上传 .txt 文本、直接粘贴文本；识别后会自动清洗成上面的 DAW 语法（去歌词、补空格、识别调号与速度），可手动修正后再写入轨道。注意：图片识别只能读出音符数字，八分音符的下划线、高低音点这类信息识别不出来，需要在下方补 [1 2]、1\'、1,。',STRIP:'每条轨道都有独立音色与效果器。选择轨道只改变“当前编辑对象”，不会切断正在播放的其他轨道。“参数清零”把 EQ/失真/合唱/延迟/混响/声像/包络全部归零并全开滤波，只保留当前振荡器音色；“参数重置”恢复该轨出厂默认；“全部重置”一次恢复五条轨道。音源下拉里除了基础波形，还有钢琴、电钢琴、管风琴、马林巴、钟琴、小提琴、大提琴、二胡、竖琴、民谣/尼龙吉他、古筝、长笛、单簧管、萨克斯、小号、人声合唱、手风琴等乐器音色；轨5 Pad 另有一组「Pad 氛围音色」（温暖 Pad / 玻璃 Pad / 人声 Pad / 弦乐 Pad）。选好乐器后可用“音源特性”里的明亮度（音色明暗）、延音（余音长短/释放时间）、颤音（揉弦与气颤深度）继续微调。\n\n【LFO 低频振荡器】LFO 是一条很慢的振荡器，周期性推动你指定的参数。「调制目标」四种：滤波 Cutoff（最常用，持续扫频做出“呼吸感”）、音量 Volume（起伏 / 抖动）、音高 Pitch（颤音 Vibrato）、声像 Pan（左右飘移）。「速率」小于 1Hz = 缓慢呼吸，2~6Hz = 明显颤动，大于 8Hz = 金属感抖动。「深度」是推动幅度，「淡入延迟」让它在音符响一会儿之后才慢慢加入。「同步」把一圈锁在 1 / 2 / 4 拍上跟着 BPM 走。波形有正弦 / 三角 / 方波 / 锯齿 / 随机五种，下方小图实时画出当前波形。轨5 Pad 默认就挂着一条 0.35Hz 的慢滤波扫动。\n\n【轨5 Pad 氛围塑形】只有选中轨5时才出现：叠加层数（几层同时发声，越厚越宽）、失谐宽度（层与层之间错开多少音分，产生缓慢拍频）、高频微光（叠一个高八度的空气感）、亚低音（低八度正弦托底）、渐入 Swell（把起音拉长成缓慢淡入）、音色漂移（每层极缓慢地随机游走）。配合长 Release 与大混响，就是铺在整首曲子下面的那层“底噪”。\n\n【真实采样音色】音源下拉框上方有一个「真实采样音色」开关（默认开）。打开后，选到钢琴、小提琴、长笛这类真实乐器时，会自动联网下载真实乐器的录音采样来发声（和 GarageBand、FL Studio 内置音源是同一套原理：预录真实乐器的音，按音高变速回放），音质远比公式合成真实。第一次选某个乐器时会自动下载，状态栏会显示进度；下载成功会显示音源名（如「音乐会大钢琴」）。基础波形（锯齿 / 方波 / 三角波 / 正弦）和鼓组不需要采样。\n\n【两种音源】优先用的是高质量独奏录音（钢琴、管风琴、小提琴、大提琴、竖琴、民谣/尼龙/电吉他、长笛、单簧管、萨克斯、小号、低音提琴、电贝斯、簧风琴共 15 件），这些是真实乐器一个个音录下来的；电钢琴、马林巴、钟琴、二胡、古筝、人声合唱等没有独奏录音的，会自动退到通用 MIDI 音色库。\n\n想提前准备好就点「⬇ 预载常用」，会把钢琴、电钢琴、民谣吉他、电吉他、小提琴、大提琴、长笛、电贝斯这 8 件一次缓存好（约 10–15MB，建议上课前在 WiFi 下点一次），之后断网也能用。注意：采样音色下起音瞬态是真实录音自带的，所以 ADSR 的 A 影响很小（想完整演示 ADSR 包络，请把音源切到基础波形，或关掉这个开关）。如果状态栏显示红色警告，可以**点一下状态栏本身**重试；失败时会自动回退到合成音色，功能完全不受影响；关掉开关则是只用合成音色、完全不联网。\n\n【基础波形示波器】音源选到锯齿波 / 方波 / 三角波 / 正弦波这四种基础波形时，音源下拉框下方会出现两张小图：左边是时域波形（画 3 个周期），右边是频域谐波（1–16 次谐波的幅度）。换成钢琴、小提琴这类真实乐器音色时这两张图会自动隐藏。',CHORD:'智能和弦区的每张卡片对应当前 Key 中的一个级数：I、ii、iii、IV、V、vi、vii°。每张卡片的下拉按组列出三和弦、七和弦、属七变化与延伸、九和弦、挂留 / 六 / 强力和弦以及自定义；级数性质只决定默认项。右侧「离调和弦」列出借用和弦、副属和弦与三全音代理，按住试听、松开停止，按钮上写的是当前 Key 下的实际和弦名。级数名称会跟着上面的「调式」变（大调是 I ii iii IV V vi vii°，自然小调是 i ii° III iv v VI VII）。柱式=同时发声；上行/下行/上下往返/随机=按所选琶音速度依次发声，松开卡片停止。琶音速度决定每个音的时值（64分～4分），旁边的「快慢」滑杆在此时值上整体加速或减速（0.25× 慢 ～ 4× 快）。开启“平滑就近连接”后，会尽量让前后两个和弦的声部移动更小。下面的“常用和弦进行”按钮会把常用进行直接写入 DAW 轨2；当前 Key 会决定实际和弦名称，卡片当前选择的和弦类型也会沿用到播放。\n\n【试听与琶音】按住和弦卡片听连续琶音，松开停止：「琶音速度」= 每个音的时值，「快慢」= 在此时值上整体加速/减速。当前 Key 会自动决定实际和弦名称（例如 C 大调中 I–V–vi–IV = C–G–Am–F），卡片当前选择的和弦类型也会沿用到轨2播放。\n\n【📘 乐理课堂】控制条最右边的按钮，点一下才展开教学模块（再点一次收起）：① 音程 ② 音阶与调式 ③ 和弦怎么搭出来 ④ 常用和弦的区别 ⑤ 和弦转位 ⑥ 主 / 下属 / 属功能和声 ⑦ 和弦连接与进行。所有例子跟着当前主音与调式走，点 ▶ 可以试听，试听时键盘会自动把这几个音居中高亮。',STEP:'Step Sequencer 是循环网格，四条轨道用法一致：先选每拍的细分（1个一拍 / 2个八分 / 3个三连 / 4个十六分），再逐个子拍输入内容。轨1旋律与轨3贝斯用下拉选音符，轨2选择和弦级数 I～vii°，轨4鼓组点击每一行的芯片循环切换鼓声（空→K底鼓→S军鼓→H闭镲→O开镲→C拍手→T通鼓→R吊镲→空），想直接清空就点芯片右边的 ✕，或者在芯片上点右键。\n\n【延音 ⏜】轨1/轨2/轨3 每个子拍右边有一个 ⏜ 按钮，点开（变绿、显示 ⏝）后这一格不再重新起音，而是把前一个音的时值往后延长——相当于简谱里的延音线，用来写长音和切分。再点一次取消。下面的“常用和弦进行”按钮会自动把进行填入轨2；播放时修改格子会即时生效。\n\n【整轨移八度】轨1 / 轨2 / 轨3 左侧有「− ⧺ +」一组小按钮，可以整轨上下移动八度（和 DAW 里的八度徽章、快捷打谱面板是同一个值，三处联动）。轨4 鼓组没有音高，所以不显示。\n\n【写更长的段落】默认 1 小节（16 步）。上方「总长度」可以扩展到 2 / 4 / 8 小节（32 / 64 / 128 步），但网格一次只显示 1 小节，用 ◀ ▶ 或直接点小节号翻页，界面大小不变。播放时会自动跟着跳到正在播放的小节。建议流程：写好第 1 小节 → 点「⧉ 本小节复制到后面」铺满整段 → 再逐小节改几处，就能做出“同中有变”的段落。缩短长度时会二次确认，因为会删掉后面的内容。\n\n每条轨道左侧的「复制 G1」只在当前小节内生效：把本小节第 1 拍完整复制到本小节第 2–4 拍，鼓组连具体鼓声一起复制（第 1 拍是 K S K S，复制后 2–4 拍同样是 K S K S），\n\n【格子怎么用】每格 = 一个起音位置，可独立选择音高与时值，四条轨道同时发声。常用和弦进行按钮会自动把进行填入轨2：默认每个和弦占 4 步，三和弦进行会自动延长最后一个和弦，八和弦进行按 16 步循环压缩。',KEYBOARD:'点击键盘即可实时发声。键盘固定显示三个八度（C3–C6），可以整体 ±1 八度。“移调 ±”以半音为单位整体平移键盘（音名、唱名、发声一起变），“移调归零”回到原调。“弯音轮”打开后可实时推拉音高（±200 音分 = ±2 半音），拖动时正在发声的音会跟着滑动；默认松手自动回中，取消勾选后可保持弯音状态。\n\n【和弦自动居中】勾选后（默认开），在和弦区按住任何和弦卡片，键盘会自动整体挪八度、让这几个音尽量落在正中间，并高亮成蓝色；松开即恢复。不想让键盘乱动就取消勾选，只用手动的 ±1 八度。\n\n【调内音显示】勾选后，当前音阶内的键保持原配色，不在音阶内的键显示为灰色；灰键仍然可以点击发声。主音、调式、移调改变时颜色会跟着更新。',ROLL:'实时编曲视图把当前音序画成钢琴卷帘：横轴是时间（每 4 拍一条粗线并标小节号），纵轴是音高，底部是鼓组的 7 条鼓件轨。播放时绿色竖线是播放头，正在发声的音会变成白色高亮。右上角四个圆点按钮可以单独隐藏 / 显示某一轨的图形（只影响显示，不影响发声）；被 Mute 或未被 Solo 的轨道，图形会变暗。DAW 和 Step 两种模式都会实时跟随。'};alert(h[type]||'')}
 
 
 
@@ -5619,8 +5852,30 @@ function initKeyboard(){
   const hint=document.getElementById('pianoHint');
   if(hint)hint.classList.toggle('show',!!wrapper&&div.offsetWidth>wrapper.clientWidth+2);
 }
+/* 当前音阶内 / 外的键位配色；灰键只改外观，不拦截任何按下事件 */
+function swTintOn(){
+  const e=document.getElementById('showScaleTint');
+  return e?!!e.checked:true;
+}
+function swScaleInMidi(m){
+  const root=currentKeyRoot();
+  const pc=((Math.round(Number(m)||0)-root)%12+12)%12;
+  const steps=(typeof scaleSteps==='function')?scaleSteps():[0,2,4,5,7,9,11];
+  return steps.indexOf(pc)>=0;
+}
+function applyScaleKeyTint(){
+  const on=swTintOn();
+  document.querySelectorAll('#piano .key').forEach(k=>{
+    const inside=swScaleInMidi(Number(k.dataset.midi));
+    k.classList.toggle('sw-out-scale',on&&!inside);
+    k.classList.toggle('sw-in-scale',on&&inside);
+  });
+}
+window.SWSCALE={inScale:swScaleInMidi,tintOn:swTintOn,apply:applyScaleKeyTint,
+  steps:function(){return scaleSteps().slice();}};
 function renderKeyboardLabels(){const root=Number(document.getElementById('keySelect').value),names=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];const kbKey=document.getElementById('keyboardKeyName');if(kbKey)kbKey.textContent=names[root]+' '+(typeof currentScale==='function'?currentScale().label:'大调');
-document.querySelectorAll('.key').forEach(k=>{const m=Number(k.dataset.midi);k.querySelector('.note-name').textContent=noteName(m);k.querySelector('.solfege').textContent=solfegeFor(m,root)})}
+document.querySelectorAll('.key').forEach(k=>{const m=Number(k.dataset.midi);k.querySelector('.note-name').textContent=noteName(m);k.querySelector('.solfege').textContent=solfegeFor(m,root)});
+applyScaleKeyTint()}
 /* ---------- 和弦 → 键盘：自动居中 + 高亮 ---------- */
 function clearChordLit(){document.querySelectorAll('.key.chord-lit').forEach(k=>k.classList.remove('chord-lit'))}
 function litChordKeys(notes){
@@ -5976,6 +6231,17 @@ document.getElementById('stepResolution').addEventListener('change',()=>{stepRes
   const cp=document.getElementById('stepCopyBar');
   if(cp)cp.addEventListener('click',copyStepBarToRest);
 })();document.getElementById('keySelect').addEventListener('change',()=>{lastChordNotes=[];updateChords();buildStepGrid();renderKeyboardLabels();if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});document.getElementById('showSolfege').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-solfege',!e.target.checked));document.getElementById('showNoteName').addEventListener('change',e=>document.getElementById('piano').classList.toggle('hide-notename',!e.target.checked));
+const swTintChk=document.getElementById('showScaleTint');
+if(swTintChk){
+  try{const v=localStorage.getItem('sw.keytint');if(v!=null)swTintChk.checked=(v==='1');}catch(e){}
+  applyScaleKeyTint();
+  swTintChk.addEventListener('change',()=>{
+    try{localStorage.setItem('sw.keytint',swTintChk.checked?'1':'0')}catch(e){}
+    applyScaleKeyTint();
+    if(typeof proRollDraw==='function')try{proRollDraw()}catch(e){}
+    if(typeof scheduleRollRefresh==='function')try{scheduleRollRefresh()}catch(e){}
+  });
+}
 document.getElementById('loopToggle').addEventListener('change',()=>{if(typeof scheduleRollRefresh==='function')scheduleRollRefresh();});/* bpmSlider 与 stepBpmSlider 已统一绑定到 applyBpm()，两处 BPM 实时同步 */document.getElementById('metronomeToggle').addEventListener('change',restartMetronome);document.getElementById('btnMetroTest').addEventListener('click',()=>{initAudio();playMetroClick(true)});['timeNum','timeDen'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{updateMetroText();if(document.getElementById('metronomeToggle').checked)restartMetronome()}));document.getElementById('chordPlayStyle').addEventListener('change',stopChordPerformance);
 // 琶音速度 / 快慢：正在播放时立即按新速度重启；并随工程一起保存
 document.getElementById('arpRate').addEventListener('change',updateArpTimer);
@@ -6030,7 +6296,7 @@ document.getElementById('btnCustomChord').addEventListener('click',()=>{
  if(Number.isFinite(idx))openCustomChordModal(idx);
 });document.getElementById('btnCustomChordCancel').addEventListener('click',closeCustomChordModal);document.getElementById('btnCustomChordSave').addEventListener('click',saveCustomChord);document.getElementById('btnCustomChordClear').addEventListener('click',clearCustomChord);document.getElementById('customChordModal').addEventListener('click',e=>{if(e.target.id==='customChordModal')closeCustomChordModal();});
 document.querySelectorAll('.drum-pad').forEach(b=>b.addEventListener('pointerdown',()=>{triggerDrum(b.dataset.drum);b.classList.add('active');setTimeout(()=>b.classList.remove('active'),100)}));
-window.addEventListener('pointerup',()=>{ keyboardHeld.forEach((_,m)=>releaseHeldNote(m)); document.querySelectorAll('.chord-card.active').forEach(c=>c.classList.remove('active')); });
+window.addEventListener('pointerup',()=>{ keyboardHeld.forEach((_,m)=>releaseHeldNote(m)); document.querySelectorAll('.chord-card.active,.sw-borrow-btn.active').forEach(c=>c.classList.remove('active')); });
 // 旋转屏幕：安卓部分机型 resize 触发时机不一致，补一个 orientationchange + 延迟重建
 window.addEventListener('orientationchange',()=>{
   setTimeout(()=>{if(document.getElementById('piano'))initKeyboard();},220);
@@ -10198,9 +10464,11 @@ function proRollDraw(){
   for(var p=PROR.top;p>PROR.top-PROR.span;p--){
     var y=g.yFor(p),pc=((p%12)+12)%12;
     var black=(pc===1||pc===3||pc===6||pc===8||pc===10);
-    var _in=(window.SWAF&&window.SWAF.on())?window.SWAF.inScale(p):null;
+    var _tint=(window.SWSCALE&&window.SWSCALE.tintOn)?window.SWSCALE.tintOn():false;
+    var _in=(_tint||(window.SWAF&&window.SWAF.on()))
+      ?((window.SWAF&&window.SWAF.inScale)?window.SWAF.inScale(p):true):null;
     ctx.fillStyle=(_in===true)?(black?'rgba(90,220,170,.065)':'rgba(90,220,170,.105)')
-      :(_in===false)?(black?'rgba(255,255,255,.008)':'rgba(255,255,255,.022)')
+      :(_in===false)?(black?'rgba(160,168,178,.030)':'rgba(160,168,178,.055)')
       :(black?'rgba(255,255,255,.015)':'rgba(255,255,255,.04)');
     ctx.fillRect(g.padL,y-g.rowH,g.W,g.rowH);
     if(pc===0){
@@ -22210,6 +22478,211 @@ window.SWTABS={
   });
 })();
 </script>
-<!-- /SWCACHE JS -->
+<!-- /SWCACHE JS --><!-- SWAQ JS -->
+<script>
+(function(){
+ if(window.__SW3AQ__)return;window.__SW3AQ__=1;
+ var K_T='sw.aqtools',K_D='sw.aqkbdock';
+ function ls(k,d){try{var v=localStorage.getItem(k);return v===null?d:v==='1';}catch(e){return d;}}
+ function save(k,v){try{localStorage.setItem(k,v?'1':'0');}catch(e){}}
+ function narrow(){return (window.innerWidth||1024)<=900;}
+ function byId(id){return document.getElementById(id);}
+ var toolsBtn=null,dockChk=null,toolsCompact=ls(K_T,narrow()),dockWanted=ls(K_D,narrow());
+ var syncTimer=0;
+
+ function markModules(){
+  var mp=document.querySelector('.metronome-panel');
+  var mm=mp&&mp.closest?mp.closest('.module'):null;
+  if(mm)mm.classList.add('sw-metro-module');
+  var p=byId('piano');
+  var km=p&&p.closest?p.closest('.module'):null;
+  if(km)km.classList.add('sw-kb-module');
+ }
+ /* ③ 左列补齐：七张卡片 + 常用和弦进行，右列仍是离调和弦 */
+ function buildChordLeft(){
+  var row=document.querySelector('#viewChord .chord-cards-row');
+  var grid=byId('chordsGrid');
+  var prog=document.querySelector('#viewChord .progression-panel');
+  if(!row||!grid||!prog||byId('swChordLeft'))return;
+  var left=document.createElement('div');
+  left.className='chord-left';left.id='swChordLeft';
+  row.insertBefore(left,grid);
+  left.appendChild(grid);
+  left.appendChild(prog);
+ }
+ /* ② 工具抽屉按钮 */
+ function buildTools(){
+  var h=document.querySelector('.header');
+  if(!h||byId('swToolsBtn'))return;
+  toolsBtn=document.createElement('button');
+  toolsBtn.type='button';toolsBtn.id='swToolsBtn';toolsBtn.className='sw-tools-btn';
+  toolsBtn.title='展开 / 收起工程栏与独立节拍器';
+  h.appendChild(toolsBtn);
+  toolsBtn.addEventListener('click',function(){
+   toolsCompact=!toolsCompact;save(K_T,toolsCompact);apply();
+  });
+ }
+ /* ① 快捷键盘：复制一份紧凑键盘吸底，原 #piano 完全不动 */
+ function buildDock(){
+  if(byId('swKbDockBar'))return;
+  var d=document.createElement('div');
+  d.id='swKbDockBar';d.className='sw-kb-dock';
+  d.innerHTML='<div class="sw-kb-dock-head"><span>⌨ 快捷键盘</span>'
+   +'<label class="sw-kb-dock-chk" title="把键盘固定显示在屏幕下方，滚动页面时也能弹">'
+   +'<input type="checkbox" id="swKbDock"> 吸底</label>'
+   +'<button type="button" id="swKbDockPeek" class="sw-kb-dock-x" title="展开 / 收起键盘">⌨</button>'
+   +'<button type="button" id="swKbDockClose" class="sw-kb-dock-x" title="收起快捷键盘">✕</button>'
+   +'</div><div class="piano-wrapper sw-dock-wrap">'
+   +'<div class="piano sw-dock-piano" id="swDockPiano"></div></div>';
+  document.body.appendChild(d);
+  var peek=byId('swKbDockPeek');
+  if(peek)peek.addEventListener('click',function(){
+   document.body.classList.toggle('sw-aq-peek');
+   if(document.body.classList.contains('sw-aq-peek'))scheduleSync();
+  });
+  dockChk=byId('swKbDock');
+  if(dockChk)dockChk.addEventListener('change',function(){
+   dockWanted=!!dockChk.checked;save(K_D,dockWanted);apply();
+  });
+  var x=byId('swKbDockClose');
+  if(x)x.addEventListener('click',function(){
+   dockWanted=false;save(K_D,false);apply();
+  });
+ }
+ /* 只有普通键盘形态才复制；乐器图片 / 指板 / 鼓垫形态下让位给原面板 */
+ function canDock(){
+  var p=byId('piano');if(!p)return false;
+  if(p.classList.contains('sw-ai-mode')||p.classList.contains('sw-pipa-mode')
+     ||p.classList.contains('dk-mode'))return false;
+  if(p.querySelector('#swFretArt'))return false;
+  return p.querySelectorAll('.key').length>=12;
+ }
+ function bindDockKey(key){
+  var m=Number(key.getAttribute('data-midi'));
+  if(typeof window.bindPress!=='function')return;
+  window.bindPress(key,function(){
+   try{
+    window.initAudio();releaseHeldNote(m);
+    playHeldNote(m,currentEditingTrack);key.classList.add('active');
+   }catch(e){}
+  },function(){
+   try{releaseHeldNote(m);key.classList.remove('active');}catch(e){}
+  });
+ }
+ function tintDock(){
+  var dst=byId('swDockPiano');if(!dst)return;
+  var S=window.SWSCALE;
+  var on=S&&S.tintOn?S.tintOn():true;
+  var ins=S&&S.inScale?S.inScale:null;
+  var ks=dst.querySelectorAll('.key');
+  for(var i=0;i<ks.length;i++){
+   var inside=ins?ins(Number(ks[i].getAttribute('data-midi'))):true;
+   ks[i].classList.toggle('sw-out-scale',on&&!inside);
+   ks[i].classList.toggle('sw-in-scale',on&&inside);
+  }
+ }
+ function syncDock(){
+  var src=byId('piano'),dst=byId('swDockPiano');
+  if(!src||!dst||!canDock())return;
+  var sk=src.querySelectorAll('.key');
+  if(!sk.length)return;
+  /* 只按结构变化重建副本；音名 / 灰键这些外观变化由全局渲染函数与 tintDock 处理。
+     必须幂等：页面里有多个监听 body 子树的巡检，无条件写 DOM 会互相触发成死循环。 */
+  var sig=src.style.width+'|'+src.style.height+'|'+sk.length+'|'
+    +sk[0].getAttribute('data-midi')+'|'+sk[sk.length-1].getAttribute('data-midi');
+  if(dst.getAttribute('data-aq-sig')===sig)return;
+  dst.setAttribute('data-aq-sig',sig);
+  dst.innerHTML=src.innerHTML;
+  dst.style.width=src.style.width;
+  dst.style.height=src.style.height;
+  var ks=dst.querySelectorAll('.key');
+  for(var i=0;i<ks.length;i++)bindDockKey(ks[i]);
+  tintDock();
+ }
+ function scheduleSync(){
+  /* 已有待执行任务就不再重排：页面里多个巡检会频繁调用本函数，
+     每次 clearTimeout 会让定时器永远排不上，副本键盘一直是空的。 */
+  if(syncTimer)return;
+  syncTimer=setTimeout(function(){
+   syncTimer=0;
+   if(document.body.classList.contains('sw-kbdock'))syncDock();
+  },60);
+ }
+ function toggleIf(cls,on){
+  if(document.body.classList.contains(cls)!==on)document.body.classList.toggle(cls,on);
+ }
+ function apply(){
+  var compact=toolsCompact&&narrow();
+  toggleIf('sw-compact-tools',compact);
+  if(toolsBtn){
+   if(toolsBtn.classList.contains('on')!==compact)toolsBtn.classList.toggle('on',compact);
+   var label=compact?'🧰 工具':'🧰 收起工具';
+   if(toolsBtn.textContent!==label)toolsBtn.textContent=label;
+   var aria=compact?'false':'true';
+   if(toolsBtn.getAttribute('aria-expanded')!==aria)
+    toolsBtn.setAttribute('aria-expanded',aria);
+  }
+  var usable=canDock()&&!document.body.classList.contains('fl-rot');
+  var on=dockWanted&&usable;
+  toggleIf('sw-kbdock',on);
+  if(dockChk&&dockChk.checked!==dockWanted)dockChk.checked=dockWanted;
+  if(on)scheduleSync();
+ }
+ /* 原键盘重建 / 音色切换 / 强制横屏时重新同步 */
+ function hook(){
+  var oi=window.initKeyboard;
+  if(typeof oi==='function'){
+   window.initKeyboard=function(){var r=oi.apply(this,arguments);scheduleSync();return r;};
+  }
+  var ot=window.applyScaleKeyTint;
+  if(typeof ot==='function'){
+   window.applyScaleKeyTint=function(){var r=ot.apply(this,arguments);tintDock();return r;};
+  }
+  var ow=window.setWorkspaceView;
+  if(typeof ow==='function'){
+   window.setWorkspaceView=function(){var r=ow.apply(this,arguments);
+    setTimeout(apply,80);return r;};
+  }
+  document.addEventListener('change',function(e){
+   if(e.target&&(e.target.id==='p_source'||e.target.id==='keySelect'
+      ||e.target.id==='scaleSelect'))setTimeout(apply,120);
+  },true);
+  window.addEventListener('resize',function(){apply();},false);
+  /* 只观察「自身属性」，不观察 childList / subtree：本页已有多个监听 body 子树的巡检，
+     观察子树会互相触发成永不排空的微任务队列。所有写入都幂等，状态不变时不写 DOM。 */
+  if(window.MutationObserver){
+   var mo=new MutationObserver(function(){try{apply();}catch(e){}});
+   mo.observe(document.body,{attributes:true,attributeFilter:['class']});
+   var p=byId('piano');
+   if(p)mo.observe(p,{attributes:true,attributeFilter:['class']});
+  }
+  setInterval(function(){
+   try{apply();if(document.body.classList.contains('sw-kbdock'))syncDock();}catch(e){}
+  },900);
+ }
+ markModules();buildChordLeft();buildTools();buildDock();hook();apply();
+ window.addEventListener('load',function(){
+  setTimeout(function(){apply();syncDock();},120);
+  setTimeout(function(){apply();syncDock();},600);
+  setTimeout(function(){apply();syncDock();},1600);
+ });
+ window.SWAQ={
+  state:function(){
+   var dst=byId('swDockPiano');
+   return {tools:toolsCompact,dock:dockWanted,
+    dockOn:document.body.classList.contains('sw-kbdock'),
+    compactOn:document.body.classList.contains('sw-compact-tools'),
+    canDock:canDock(),narrow:narrow(),
+    dockKeys:dst?dst.querySelectorAll('.key').length:0};
+  },
+  setTools:function(v){toolsCompact=!!v;save(K_T,toolsCompact);apply();},
+  setDock:function(v){dockWanted=!!v;save(K_D,dockWanted);apply();},
+  refresh:function(){apply();scheduleSync();},
+  sync:syncDock
+ };
+})();
+
+</script>
+<!-- /SWAQ JS -->
 </body>
 </html>
