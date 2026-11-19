@@ -1365,6 +1365,148 @@ body.fl-rot #fl-stage{max-width:none!important;width:var(--fl-w,100dvh);height:v
 
 /*/DJ:CSS*/
 </style>
+<style id="vcCss">
+/*VC:CSS*/
+/* v3VC 版式：统一间距 / 控件高度 / 和弦区栅格；和弦排布面板。
+   用 body.sw-ui2 前缀，所有规则都是覆盖式，不动原有结构与 fl-rot 横屏修复。 */
+:root{--sw-gap:14px;--sw-pad:16px;--sw-ctl:28px;--sw-r:9px;--vc-line:rgba(255,255,255,.09)}
+
+/* ---------- 整体节奏 ---------- */
+body.sw-ui2 .synth-container{gap:var(--sw-gap);padding:18px;border-radius:18px}
+body.sw-ui2 .module{padding:var(--sw-pad);border-radius:12px}
+body.sw-ui2 .module-title{margin-bottom:12px;font-size:11.5px;letter-spacing:1.4px;gap:8px}
+body.sw-ui2 .module-title:before{width:3px;height:13px}
+body.sw-ui2 .header{padding-bottom:12px;gap:12px;align-items:center}
+body.sw-ui2 .header::after{width:160px}
+body.sw-ui2 .main-title{font-size:25px;letter-spacing:2.6px}
+body.sw-ui2 .master-meter{width:230px;height:30px}
+body.sw-ui2 .tutorial-toggle{height:var(--sw-ctl);padding:0 11px;font-size:11px;border-radius:7px}
+body.sw-ui2 .sw-tools-btn{height:var(--sw-ctl);padding:0 11px;font-size:11px;border-radius:7px}
+
+body.sw-ui2 .project-bar,
+body.sw-ui2 .metronome-panel,
+body.sw-ui2 .mode-bar,
+body.sw-ui2 .chord-arp-controls{padding:8px 10px;gap:6px;border-radius:var(--sw-r)}
+
+/* ---------- 工作区导航：等宽等高 ---------- */
+body.sw-ui2 .ws-nav,body.sw-ui2 #wsNav{gap:8px}
+body.sw-ui2 .ws-card{padding:9px 11px;border-radius:12px;min-height:54px;gap:2px;justify-content:center}
+body.sw-ui2 .ws-card .ws-ico{font-size:16px}
+body.sw-ui2 .ws-card .ws-name{font-size:12.5px;letter-spacing:.2px}
+
+/* ---------- 工具行：控件统一 28px ---------- */
+body.sw-ui2 .toolbar{gap:6px}
+body.sw-ui2 .toolbar>*{min-height:var(--sw-ctl)}
+body.sw-ui2 .btn.small{height:var(--sw-ctl);padding:0 10px;font-size:11px;border-radius:7px}
+body.sw-ui2 .styled-sel{height:var(--sw-ctl);padding:0 8px;font-size:11px;border-radius:7px}
+body.sw-ui2 .status-pill,body.sw-ui2 .val-box{min-height:var(--sw-ctl);display:inline-flex;
+  align-items:center;padding:0 9px;font-size:11px;border-radius:7px}
+body.sw-ui2 .toolbar label.status-pill,body.sw-ui2 .toolbar label{gap:5px;font-size:11px}
+body.sw-ui2 input[type=range]{height:var(--sw-ctl)}
+body.sw-ui2 .custom-prog-row>input[type=text]{height:var(--sw-ctl);font-size:11px}
+body.sw-ui2 .custom-prog-row{gap:6px}
+body.sw-ui2 .chord-arp-controls>span{font-size:10.5px!important;color:var(--text-muted);
+  height:var(--sw-ctl);display:inline-flex;align-items:center}
+
+/* 说明性短小字：收进问号，界面只留参数 */
+body.sw-ui2 .borrowed-title span,
+body.sw-ui2 .progression-title>span,
+body.sw-ui2 .sw-tb-hd span{display:none}
+body.sw-ui2:not(.sw-notes-on) .roll-note,
+body.sw-ui2:not(.sw-notes-on) .pro-tip,
+body.sw-ui2:not(.sw-notes-on) .ws-rowtip{display:none}
+
+/* ---------- 和弦区：左列填满，不再留大片空白 ---------- */
+body.sw-ui2 .chord-cards-row{display:grid;grid-template-columns:minmax(0,1fr) 216px;
+  gap:10px;align-items:start}
+body.sw-ui2 #swChordLeft{display:flex;flex-direction:column;gap:10px;min-width:0}
+body.sw-ui2 #chordsGrid{grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:0}
+body.sw-ui2 .chord-card{min-height:96px;padding:9px 5px;gap:2px;justify-content:center;border-radius:9px}
+body.sw-ui2 .chord-card select{height:24px;width:100%;margin-bottom:6px;font-size:10px}
+body.sw-ui2 .progression-panel{margin-top:0;padding:9px 10px;border-radius:9px}
+body.sw-ui2 .progression-title{margin-bottom:7px;font-size:11px}
+body.sw-ui2 .progression-buttons{gap:5px}
+body.sw-ui2 .progression-btn{height:26px;padding:0 9px;font-size:10.5px;border-radius:6px}
+body.sw-ui2 .borrowed-box{margin-top:0;padding:9px;border-radius:9px;
+  align-self:stretch;display:flex;flex-direction:column}
+body.sw-ui2 .borrowed-title{margin-bottom:8px}
+body.sw-ui2 .borrowed-grid{gap:6px}
+/* 桌面：右列按钮均匀铺满左列高度，两列不留底部空白 */
+@media(min-width:901px){
+  body.sw-ui2 .borrowed-grid{flex:1 1 auto;grid-template-rows:repeat(6,minmax(0,1fr))}
+}
+body.sw-ui2 .chord-cards-row>.vc-panel{grid-column:1/-1}
+
+/* ---------- 和弦排布面板 ---------- */
+.vc-panel{box-sizing:border-box;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.16));
+  border:1px solid var(--vc-line);border-radius:9px;padding:10px 12px;
+  display:flex;flex-direction:column;gap:8px;min-height:0;flex:none}
+.vc-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vc-head b{font-size:11.5px;font-weight:800;letter-spacing:.6px;white-space:nowrap}
+.vc-state{font-size:10.5px;color:var(--text-muted);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.vc-head .vc-btn{margin-left:auto}
+.vc-btn{height:24px;padding:0 9px;font-size:10.5px;border-radius:6px;
+  border:1px solid var(--vc-line);background:rgba(255,255,255,.045);color:var(--text-main);
+  cursor:pointer;font-family:inherit;white-space:nowrap}
+.vc-btn:hover{border-color:var(--accent);color:var(--accent)}
+.vc-btn.on{background:rgba(0,230,118,.16);border-color:rgba(0,230,118,.55);color:#9effc9}
+.vc-rows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;flex:none}
+.vc-row{box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:center;gap:6px;padding:8px 9px;min-height:0;
+  border:1px solid rgba(255,255,255,.06);border-radius:7px;background:rgba(255,255,255,.022)}
+.vc-row>.vc-k{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.vc-k{font-size:10.5px;color:var(--text-muted);white-space:nowrap}
+.vc-seg,.vc-chips{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.vc-ctl{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.vc-pa{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.vc-pa .vc-k{width:26px}
+.vc-pa .vc-btn{min-width:24px;padding:0 5px}
+.vc-num{min-width:30px;text-align:center;font-size:10.5px;color:var(--text-main);
+  font-variant-numeric:tabular-nums}
+.vc-chip{min-width:0;padding:0 7px}
+.vc-chip.off{opacity:.42;text-decoration:line-through;border-color:rgba(255,77,109,.35)}
+.vc-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  border-top:1px solid rgba(255,255,255,.07);padding-top:8px}
+.vc-notes{font-size:11px;font-weight:800;letter-spacing:.3px;flex:1 1 160px;
+  min-width:120px;font-variant-numeric:tabular-nums}
+.vc-meta{font-size:10px;color:var(--text-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.vc-empty{font-size:10.5px;color:var(--text-dim)}
+
+/* ---------- 键盘 / 指板模块标题行 ---------- */
+body.sw-ui2 #swKeyboardModule>.toolbar{gap:6px}
+
+/* ---------- 手机 ---------- */
+@media(max-width:900px){
+  body.sw-ui2 .synth-container{padding:12px;gap:11px;border-radius:14px}
+  body.sw-ui2 .module{padding:12px}
+  body.sw-ui2 .module-title{font-size:10.5px;letter-spacing:.9px;margin-bottom:10px}
+  body.sw-ui2 .main-title{font-size:19px;letter-spacing:1.2px}
+  body.sw-ui2 .header{padding-bottom:8px;gap:8px}
+  body.sw-ui2 .master-meter{width:110px;height:26px}
+  body.sw-ui2 .ws-nav,body.sw-ui2 #wsNav{gap:5px}
+  body.sw-ui2 .ws-card{padding:7px 3px;min-height:48px}
+  body.sw-ui2 .ws-card .ws-ico{font-size:14px}
+  body.sw-ui2 .ws-card .ws-name{font-size:10px;letter-spacing:0;white-space:nowrap}
+  body.sw-ui2 .chord-cards-row{grid-template-columns:minmax(0,1fr)}
+  body.sw-ui2 .borrowed-box{grid-column:1}
+  body.sw-ui2 #swChordLeft{height:auto}
+  body.sw-ui2 #swChordLeft .vc-panel{flex:none}
+  body.sw-ui2 #chordsGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  body.sw-ui2 .chord-card{min-height:92px;padding:8px 3px}
+  body.sw-ui2 .chord-card select{font-size:9px;padding:2px}
+  body.sw-ui2 .vc-panel{min-height:0}
+  /* 手机下 .chord-left 是 display:contents，子元素按 order 参与栅格：
+     和弦卡 1 → 排布面板 2 → 离调 2（DOM 在后） → 进行面板 3 */
+  body.sw-ui2 .vc-panel{order:2}
+  .vc-rows{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:420px){
+  body.sw-ui2 .ws-card .ws-name{font-size:9.5px}
+}
+/*VC:/CSS*/
+
+</style>
 </head>
 <body>
 <!-- SWBOOT MASK -->
@@ -25257,6 +25399,391 @@ window.DJX={
 })();
 
 /*/DJ:JS*/
+</script>
+<!--VC:VIEW-->
+<div id="vcSrc" hidden>
+  <div class="vc-panel" id="vcPanel">
+    <div class="vc-head">
+      <b>和弦排布</b>
+      <span class="vc-state" id="vcState">—</span>
+      <button type="button" class="vc-btn" id="vcReset" title="恢复原样、原位、不移调、不去音">重置</button>
+    </div>
+    <div class="vc-rows">
+      <div class="vc-row">
+        <span class="vc-k">排列</span>
+        <span class="vc-seg" id="vcArrange" title="原样 = 保持和弦原有音程；紧密 = 全部音压进一个八度；开放 = 从紧密出发，第 3 个音起各移高一个八度">
+          <button type="button" class="vc-btn on" data-arr="raw">原样</button>
+          <button type="button" class="vc-btn" data-arr="close">紧密</button>
+          <button type="button" class="vc-btn" data-arr="open">开放</button>
+        </span>
+      </div>
+      <div class="vc-row">
+        <span class="vc-k">转位</span>
+        <span class="vc-seg" id="vcInv" title="把当前最低的 n 个音各移高一个八度"></span>
+      </div>
+      <div class="vc-row">
+        <span class="vc-k">整体</span>
+        <span class="vc-ctl" id="vcShift" title="八度 = 全部音 ±12 半音；半音 = 全部音 ±1 半音">
+          <span class="vc-pa"><span class="vc-k">八度</span>
+            <button type="button" class="vc-btn" data-sh="oct-">−</button>
+            <span class="vc-num" id="vcOct">0</span>
+            <button type="button" class="vc-btn" data-sh="oct+">+</button></span>
+          <span class="vc-pa"><span class="vc-k">半音</span>
+            <button type="button" class="vc-btn" data-sh="semi-">−</button>
+            <span class="vc-num" id="vcSemi">0</span>
+            <button type="button" class="vc-btn" data-sh="semi+">+</button></span>
+        </span>
+      </div>
+      <div class="vc-row">
+        <span class="vc-k">去掉</span>
+        <span class="vc-chips" id="vcOmit" title="按音级去掉和弦音，对所有和弦生效；至少保留一个音"></span>
+      </div>
+    </div>
+    <div class="vc-foot">
+      <span class="vc-k">发声</span>
+      <span class="vc-notes" id="vcNotes">—</span>
+      <span class="vc-meta" id="vcMeta"></span>
+      <button type="button" class="vc-btn" id="vcPlay">▶ 试听</button>
+    </div>
+  </div>
+</div>
+<!--/VC:VIEW-->
+<script id="vcMod">
+/*VC:JS*/
+/* v3VC：和弦排布引擎 + 版式收拢。
+   默认状态恒等（原样 / 0 位移 / 原位 / 不去音），不改变任何既有发声结果；
+   只有在面板里改了设置，才对和弦音做变换。 */
+(function(){
+'use strict';
+var S={arrange:'raw',oct:0,semi:0,inv:0,omit:[],preview:0};
+var DEF={arrange:'raw',oct:0,semi:0,inv:0,omit:[]};
+var DEG=['根','♭9','9','♭3','3','11','♭5','5','♭13','13','♭7','7'];
+var PC=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+var origRaw=null,origBor=null,origGet=null,bound=false,booted=false;
+var invSig='',omSig='',rafPending=false;
+
+function byId(id){return document.getElementById(id)}
+function setText(el,v){if(el&&el.textContent!==v)el.textContent=v}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function pcName(n){return PC[((Math.round(n)%12)+12)%12]}
+function fullName(n){try{return noteName(Math.round(n))}catch(e){return pcName(n)+Math.floor(Math.round(n)/12-1)}}
+function active(){return S.arrange!=='raw'||S.oct!==0||S.semi!==0||S.inv!==0||S.omit.length>0}
+
+/* ---------- 变换：省略 → 排列 → 转位 → 位移 → 音域限制 ---------- */
+function transform(notes){
+  if(!notes||!notes.length)return [];
+  if(!active())return notes.slice();
+  var out=notes.slice(),i;
+  var lo=Math.min.apply(null,out);
+  if(S.omit.length){
+    var kept=[];
+    for(i=0;i<out.length;i++){
+      var rel=((out[i]-lo)%12+12)%12;
+      if(S.omit.indexOf(rel)<0)kept.push(out[i]);
+    }
+    if(kept.length)out=kept;else out=[out[0]];
+  }
+  if(S.arrange==='close'||S.arrange==='open'){
+    var base=lo;
+    out=out.map(function(n){return base+(((n-base)%12)+12)%12});
+    out.sort(function(a,b){return a-b});
+    if(S.arrange==='open'){
+      out=out.map(function(n,k){return k>=2?n+12:n});
+      out.sort(function(a,b){return a-b});
+    }
+  }
+  var iv=clamp(S.inv,0,Math.max(0,out.length-1));
+  if(iv>0){
+    out=out.map(function(n,k){return k<iv?n+12:n});
+    out.sort(function(a,b){return a-b});
+  }
+  var sh=12*S.oct+S.semi;
+  if(sh)out=out.map(function(n){return n+sh});
+  var mn=Math.min.apply(null,out),mx=Math.max.apply(null,out),guard=0;
+  while(mn<24&&guard++<8){out=out.map(function(n){return n+12});mn+=12;mx+=12}
+  guard=0;
+  while(mx>108&&guard++<8){out=out.map(function(n){return n-12});mn-=12;mx-=12}
+  return out;
+}
+
+/* ---------- 原始和弦音（绕过 hook） ---------- */
+function rawNotes(index){
+  var f=origRaw||(typeof window.getRawChordNotes==='function'?window.getRawChordNotes:null);
+  if(!f)return [];
+  try{return f(index==null?S.preview:index)||[]}catch(e){return []}
+}
+function relList(){
+  var raw=rawNotes(S.preview);
+  if(!raw.length)return [];
+  var lo=Math.min.apply(null,raw),seen={},o=[];
+  raw.forEach(function(n){
+    var r=((n-lo)%12+12)%12;
+    if(seen[r])return;seen[r]=1;
+    o.push({r:r,label:DEG[r]||String(r),name:pcName(n)});
+  });
+  return o;
+}
+function previewLabel(){
+  try{
+    var d=chordDictionary[S.preview];
+    var st=getChordStructure(S.preview);
+    return (d?d.degree:'?')+' · '+pcName(rawNotes(S.preview)[0]||0)+(st&&st.label&&st.label!=='Maj'?st.label:'');
+  }catch(e){return '—'}
+}
+
+/* ---------- hook：源头变换，默认恒等 ---------- */
+function hook(){
+  if(typeof window.getRawChordNotes==='function'&&!origRaw){
+    origRaw=window.getRawChordNotes;
+    window.getRawChordNotes=function(){return transform(origRaw.apply(this,arguments))};
+  }
+  if(typeof window.borrowedChordNotes==='function'&&!origBor){
+    origBor=window.borrowedChordNotes;
+    window.borrowedChordNotes=function(){return transform(origBor.apply(this,arguments))};
+  }
+  /* 排布生效时不做平滑就近连接：它会把排好的音重新按最近八度打散。
+     默认状态下完全沿用原逻辑，回归不受影响。 */
+  if(typeof window.getChordNotes==='function'&&!origGet){
+    origGet=window.getChordNotes;
+    window.getChordNotes=function(index){
+      var n=window.getRawChordNotes(index);
+      var t=byId('toggleVoiceLeading');
+      if(active()||!t||!t.checked)return n.slice();
+      return applyVoiceLeading(lastChordNotes,n);
+    };
+  }
+  return !!(origRaw&&origBor&&origGet);
+}
+
+/* ---------- 面板挂载 ---------- */
+function mount(){
+  var src=byId('vcSrc');
+  var p=src?src.querySelector('.vc-panel'):null;
+  var panel=byId('vcPanel');
+  if(!panel&&p){
+    panel=p;
+    if(src.parentNode)src.parentNode.removeChild(src);
+  }
+  if(!panel)return false;
+  var left=byId('swChordLeft'),grid=byId('chordsGrid');
+  var target=left||(grid&&grid.parentNode);
+  if(!target)return false;
+  if(panel.parentNode!==target)target.appendChild(panel);
+  return true;
+}
+
+/* ---------- 动态段：转位按钮 / 去音 chip ---------- */
+function buildInv(n){
+  var box=byId('vcInv');if(!box)return;
+  var max=Math.max(1,Math.min(6,n));
+  var sig=String(max);
+  if(sig===invSig&&box.children.length)return;
+  invSig=sig;
+  box.innerHTML='';
+  var names=['原位','第一','第二','第三','第四','第五'];
+  for(var i=0;i<max;i++){
+    var b=document.createElement('button');
+    b.type='button';b.className='vc-btn';b.dataset.inv=String(i);
+    b.textContent=names[i]||('第'+i);
+    box.appendChild(b);
+  }
+}
+function buildOmit(list){
+  var box=byId('vcOmit');if(!box)return;
+  var sig=list.map(function(x){return x.r}).join(',');
+  if(sig===omSig&&box.children.length)return;
+  omSig=sig;
+  box.innerHTML='';
+  if(!list.length){
+    var s=document.createElement('span');s.className='vc-empty';s.textContent='—';box.appendChild(s);return;
+  }
+  list.forEach(function(x){
+    var b=document.createElement('button');
+    b.type='button';b.className='vc-btn vc-chip';b.dataset.om=String(x.r);
+    b.textContent=x.label+' '+x.name;
+    box.appendChild(b);
+  });
+}
+
+/* ---------- 刷新 ---------- */
+function refresh(){
+  var raw=rawNotes(S.preview);
+  if(raw.length){
+    var rels=relList();
+    var kept=rels.filter(function(x){return S.omit.indexOf(x.r)<0});
+    S.inv=clamp(S.inv,0,Math.max(0,Math.max(1,kept.length)-1));
+    buildInv(Math.max(1,kept.length));
+    buildOmit(rels);
+  }
+  var arr=byId('vcArrange');
+  if(arr)for(var i=0;i<arr.children.length;i++){
+    var b=arr.children[i],on=b.dataset.arr===S.arrange;
+    if(b.classList.contains('on')!==on)b.classList.toggle('on',on);
+  }
+  var iv=byId('vcInv');
+  if(iv)for(var j=0;j<iv.children.length;j++){
+    var ib=iv.children[j],ion=Number(ib.dataset.inv)===S.inv;
+    if(ib.classList.contains('on')!==ion)ib.classList.toggle('on',ion);
+  }
+  var om=byId('vcOmit');
+  if(om)for(var k=0;k<om.children.length;k++){
+    var ob=om.children[k];if(ob.dataset.om==null)continue;
+    var off=S.omit.indexOf(Number(ob.dataset.om))>=0;
+    if(ob.classList.contains('off')!==off)ob.classList.toggle('off',off);
+    if(ob.classList.contains('on')===off)ob.classList.toggle('on',!off);
+  }
+  setText(byId('vcOct'),S.oct>0?'+'+S.oct:String(S.oct));
+  setText(byId('vcSemi'),S.semi>0?'+'+S.semi:String(S.semi));
+  var out=transform(raw);
+  var names=out.map(fullName).join(' ');
+  setText(byId('vcNotes'),names||'—');
+  var span=out.length?Math.max.apply(null,out)-Math.min.apply(null,out):0;
+  setText(byId('vcMeta'),out.length?('跨度 '+span+' · 低音 '+fullName(Math.min.apply(null,out))):'');
+  var mode={raw:'原样',close:'紧密',open:'开放'}[S.arrange];
+  setText(byId('vcState'),previewLabel()+' · '+mode+(active()?' · 已改':''));
+}
+
+/* ---------- 交互 ---------- */
+function set(patch){
+  if(!patch)return state();
+  if(patch.arrange!=null)S.arrange=['raw','close','open'].indexOf(patch.arrange)>=0?patch.arrange:'raw';
+  if(patch.oct!=null)S.oct=clamp(Number(patch.oct)||0,-2,2);
+  if(patch.semi!=null)S.semi=clamp(Number(patch.semi)||0,-12,12);
+  if(patch.inv!=null)S.inv=clamp(Number(patch.inv)||0,0,5);
+  if(patch.preview!=null)S.preview=clamp(Number(patch.preview)||0,0,6);
+  if(Array.isArray(patch.omit))S.omit=patch.omit.map(Number).filter(function(x){return x>=0&&x<12});
+  refresh();return state();
+}
+function reset(){
+  S.arrange=DEF.arrange;S.oct=DEF.oct;S.semi=DEF.semi;S.inv=DEF.inv;S.omit=DEF.omit.slice();
+  refresh();return state();
+}
+function state(){
+  return {arrange:S.arrange,oct:S.oct,semi:S.semi,inv:S.inv,
+    omit:S.omit.slice(),preview:S.preview,active:active()};
+}
+function notes(){
+  var raw=rawNotes(S.preview);
+  return {raw:raw.slice(),out:transform(raw),preview:S.preview};
+}
+function play(){
+  try{initAudio()}catch(e){}
+  var out=transform(rawNotes(S.preview));
+  try{
+    stopChordPerformance();
+    lastChordNotes=out.slice();
+    startChordPerformance(out);
+    if(typeof litChordKeys==='function')litChordKeys(out);
+    setTimeout(function(){try{stopChordPerformance()}catch(e){}},1500);
+  }catch(e){}
+  return out;
+}
+function bind(){
+  if(bound)return;
+  var panel=byId('vcPanel');
+  var grid=byId('chordsGrid');
+  if(!panel||!grid){return}
+  bound=true;
+  panel.addEventListener('click',function(e){
+    var t=e.target||{},b=t.closest?t.closest('button'):null;
+    if(!b||!panel.contains(b))return;
+    if(b.dataset.arr){S.arrange=b.dataset.arr;refresh();return}
+    if(b.dataset.inv!=null){S.inv=Number(b.dataset.inv);refresh();return}
+    if(b.dataset.om!=null){
+      var r=Number(b.dataset.om),i=S.omit.indexOf(r);
+      if(i>=0)S.omit.splice(i,1);
+      else{
+        var rel=relList().filter(function(x){return S.omit.indexOf(x.r)<0});
+        if(rel.length>1)S.omit.push(r);
+      }
+      refresh();return;
+    }
+    if(b.dataset.sh){
+      var d=b.dataset.sh;
+      if(d==='oct-')S.oct=clamp(S.oct-1,-2,2);
+      if(d==='oct+')S.oct=clamp(S.oct+1,-2,2);
+      if(d==='semi-')S.semi=clamp(S.semi-1,-12,12);
+      if(d==='semi+')S.semi=clamp(S.semi+1,-12,12);
+      refresh();return;
+    }
+    if(b.id==='vcReset'){reset();return}
+    if(b.id==='vcPlay'){play();return}
+  });
+  /* 预览跟随最近按下的和弦卡 */
+  grid.addEventListener('pointerdown',function(e){
+    var t=e.target||{},c=t.closest?t.closest('.chord-card'):null;
+    if(!c||!grid.contains(c))return;
+    var i=[].indexOf.call(grid.children,c);
+    if(i>=0&&i!==S.preview){S.preview=i;refresh()}
+  },true);
+  grid.addEventListener('click',function(e){
+    var t=e.target||{},c=t.closest?t.closest('.chord-card'):null;
+    if(!c||!grid.contains(c))return;
+    var i=[].indexOf.call(grid.children,c);
+    if(i>=0&&i!==S.preview){S.preview=i;refresh()}
+  },true);
+  var mo=typeof MutationObserver!=='undefined'?new MutationObserver(function(){
+    if(rafPending)return;rafPending=true;
+    requestAnimationFrame(function(){rafPending=false;refresh()});
+  }):null;
+  if(mo)mo.observe(grid,{childList:true});
+  ['keySelect','scaleSelect'].forEach(function(id){
+    var el=byId(id);
+    if(el)el.addEventListener('change',function(){setTimeout(refresh,60)});
+  });
+}
+
+/* ---------- 窄屏工具抽屉：无本地偏好时默认收起 ---------- */
+function initTools(){
+  try{
+    if(localStorage.getItem('sw.aqtools')!==null)return;
+    if((window.innerWidth||1024)>900)return;
+    var b=byId('swToolsBtn');
+    if(!b||document.body.classList.contains('sw-compact-tools'))return;
+    b.click();
+  }catch(e){}
+}
+
+/* ---------- 启动 ---------- */
+function start(){
+  if(!document.body)return;
+  document.body.classList.add('sw-ui2');
+  mount();hook();bind();refresh();initTools();
+  window.addEventListener('resize',function(){setTimeout(initTools,150)});
+  window.addEventListener('orientationchange',function(){setTimeout(initTools,250)});
+  booted=true;
+}
+function later(){mount();hook();bind();refresh();initTools()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
+else start();
+[180,700,1600,3000].forEach(function(ms){setTimeout(later,ms)});
+
+/* 验收接口 */
+window.VCX={
+  state:state,set:set,reset:reset,notes:notes,transform:transform,play:play,refresh:refresh,
+  hooked:function(){return {raw:!!origRaw,borrowed:!!origBor,get:!!origGet}},
+  mounted:function(){
+    var p=byId('vcPanel');
+    return {panel:!!p,parent:p&&p.parentNode?p.parentNode.id||p.parentNode.className:'',
+      inLeft:!!(p&&byId('swChordLeft')&&p.parentNode===byId('swChordLeft'))};
+  },
+  layout:function(){
+    var g=function(s){var e=document.querySelector(s);if(!e)return null;var r=e.getBoundingClientRect();
+      return {w:Math.round(r.width),h:Math.round(r.height),x:Math.round(r.x),y:Math.round(r.y)}};
+    var cards=[].slice.call(document.querySelectorAll('#chordsGrid .chord-card')).map(function(e){
+      var r=e.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]});
+    var ws=[].slice.call(document.querySelectorAll('.ws-card')).map(function(e){
+      var r=e.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]});
+    return {ui2:document.body.classList.contains('sw-ui2'),row:g('.chord-cards-row'),
+      left:g('#swChordLeft'),grid:g('#chordsGrid'),panel:g('.vc-panel'),
+      borrowed:g('.borrowed-box'),cards:cards,ws:ws,
+      docH:document.documentElement.scrollHeight};
+  },
+  ready:function(){return booted}
+};
+})();
+/*VC:/JS*/
+
 </script>
 </body>
 </html>
